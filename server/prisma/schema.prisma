@@ -1,0 +1,174 @@
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DATABASE_URL_DIRECT")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  ADMIN
+  DOCTOR
+  PATIENT
+}
+
+enum AppointmentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  COMPLETED
+  CANCELLED
+}
+
+model User {
+  id          Int      @id @default(autoincrement())
+  name        String
+  email       String   @unique
+  password    String
+
+  role        Role
+
+  phone       String?
+  image       String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Doctor Profile (Only for doctors)
+  doctorProfile DoctorProfile?
+
+  // Patient Appointments
+  patientAppointments Appointment[] @relation("PatientAppointments")
+
+  // Doctor Appointments
+  doctorAppointments Appointment[] @relation("DoctorAppointments")
+
+  reviewsWritten   Review[] @relation("PatientReviews")
+  reviewsReceived  Review[] @relation("DoctorReviews")
+
+  @@map("users")
+}
+
+model DoctorProfile {
+  id               Int    @id @default(autoincrement())
+
+  userId           Int    @unique
+  user             User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  specialization   String
+  qualification    String?
+  experience       Int?
+  bio              String?
+
+  workingDays      String?
+  workingHours     String?
+  availability     Json?
+
+  services         Service[] @relation("DoctorServices")
+  ownedServices    Service[] @relation("DoctorOwnedServices")
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@map("doctor_profiles")
+}
+
+model Service {
+  id              Int      @id @default(autoincrement())
+
+  title           String
+  description     String
+
+  image           String?
+
+  duration        Int?      // minutes
+
+  price           Float?
+
+  isGlobal        Boolean  @default(true)
+
+  ownerDoctorProfileId Int?
+  ownerDoctorProfile   DoctorProfile? @relation("DoctorOwnedServices", fields: [ownerDoctorProfileId], references: [id], onDelete: Cascade)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  appointments    Appointment[]
+  doctorProfiles  DoctorProfile[] @relation("DoctorServices")
+
+  @@map("services")
+}
+
+model Appointment {
+  id                Int      @id @default(autoincrement())
+
+  patientId         Int
+  patient           User     @relation("PatientAppointments", fields: [patientId], references: [id], onDelete: Cascade)
+
+  doctorId          Int?
+  doctor            User?    @relation("DoctorAppointments", fields: [doctorId], references: [id])
+
+  serviceId         Int
+  service           Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  appointmentDate   DateTime
+
+  appointmentTime   String
+
+  medicalHistory    String?
+
+  currentProblem    String
+
+  notes             String?
+
+  rejectionReason   String?
+
+  status            AppointmentStatus @default(PENDING)
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  review            Review?
+
+  @@map("appointments")
+}
+
+model Review {
+  id             Int      @id @default(autoincrement())
+
+  patientId      Int
+  patient        User     @relation("PatientReviews", fields: [patientId], references: [id], onDelete: Cascade)
+
+  doctorId       Int
+  doctor         User     @relation("DoctorReviews", fields: [doctorId], references: [id], onDelete: Cascade)
+
+  appointmentId  Int      @unique
+  appointment    Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+  rating         Int
+  comment        String
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("reviews")
+}
+
+model AuditLog {
+  id          Int      @id @default(autoincrement())
+
+  actorId     Int?
+  actorRole   String?
+  actorEmail  String?
+
+  action      String
+  entity      String?
+  entityId    String?
+  details     String?
+
+  createdAt   DateTime @default(now())
+
+  @@map("audit_logs")
+}

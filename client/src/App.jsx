@@ -1,0 +1,145 @@
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
+import Home from "./pages/Home";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import DoctorRegister from "./pages/DoctorRegister";
+import Services from "./pages/Services";
+import Navbar from "./components/layout/Navbar";
+import Appointment from "./pages/Appointment";
+import Doctors from "./pages/Doctors";
+import Contact from "./pages/Contact";
+import ProtectedRoute from "./components/common/ProtectedRoute";
+import PatientLayout from "./pages/patient/PatientLayout";
+import PatientAppointments from "./pages/patient/PatientAppointments";
+import PatientBook from "./pages/patient/PatientBook";
+import PatientProfile from "./pages/patient/PatientProfile";
+import PatientReviews from "./pages/patient/PatientReviews";
+import PatientChat from "./pages/patient/PatientChat";
+import DoctorLayout from "./pages/doctor/DoctorLayout";
+import DoctorOverview from "./pages/doctor/DoctorOverview";
+import DoctorRequests from "./pages/doctor/DoctorRequests";
+import DoctorUpcoming from "./pages/doctor/DoctorUpcoming";
+import DoctorCompleted from "./pages/doctor/DoctorCompleted";
+import DoctorPatients from "./pages/doctor/DoctorPatients";
+import DoctorReviews from "./pages/doctor/DoctorReviews";
+import DoctorProfile from "./pages/doctor/DoctorProfile";
+import AdminLayout from "./pages/admin/AdminLayout";
+import AdminOverview from "./pages/admin/AdminOverview";
+import AdminAppointments from "./pages/admin/AdminAppointments";
+import AdminDoctors from "./pages/admin/AdminDoctors";
+import AdminPatients from "./pages/admin/AdminPatients";
+import AdminReviews from "./pages/admin/AdminReviews";
+import AdminServices from "./pages/admin/AdminServices";
+import AdminAuditLogs from "./pages/admin/AdminAuditLogs";
+import { useAuth } from "./context/AuthContext";
+import { dashboardPathForRole } from "./utils/storage";
+import Loader from "./components/common/Loader";
+
+const HIDE_NAV = ["/login", "/register", "/register-doctor", "/patient", "/doctor", "/admin"];
+
+function App() {
+  const location = useLocation();
+  const { isAuthenticated, user, loading } = useAuth();
+
+  const hideNavbar = HIDE_NAV.some(
+    (path) =>
+      location.pathname === path || location.pathname.startsWith(`${path}/`)
+  );
+
+  if (
+    loading &&
+    (location.pathname === "/" ||
+      location.pathname === "/register" ||
+      location.pathname === "/register-doctor" ||
+      location.pathname === "/login")
+  ) {
+    return (
+      <div className="page-shell flex min-h-screen items-center justify-center">
+        <Loader />
+      </div>
+    );
+  }
+
+  return (
+    <>
+      {!hideNavbar && <Navbar />}
+
+      <Routes>
+        <Route
+          path="/"
+          element={
+            isAuthenticated && user ? (
+              <Navigate to={dashboardPathForRole(user.role)} replace />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/register-doctor" element={<DoctorRegister />} />
+        <Route path="/home" element={<Home />} />
+        <Route path="/services" element={<Services />} />
+        <Route path="/appointment" element={<Appointment />} />
+        <Route path="/doctors" element={<Doctors />} />
+        <Route path="/contact" element={<Contact />} />
+
+        <Route
+          path="/patient"
+          element={
+            <ProtectedRoute roles={["PATIENT"]}>
+              <PatientLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<PatientAppointments />} />
+          <Route path="book" element={<PatientBook />} />
+          <Route path="chat" element={<PatientChat />} />
+          <Route path="reviews" element={<PatientReviews />} />
+          <Route path="profile" element={<PatientProfile />} />
+        </Route>
+
+        <Route
+          path="/doctor"
+          element={
+            <ProtectedRoute roles={["DOCTOR"]}>
+              <DoctorLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<DoctorOverview />} />
+          <Route path="requests" element={<DoctorRequests />} />
+          <Route path="upcoming" element={<DoctorUpcoming />} />
+          <Route path="completed" element={<DoctorCompleted />} />
+          <Route path="patients" element={<DoctorPatients />} />
+          <Route path="reviews" element={<DoctorReviews />} />
+          <Route path="profile" element={<DoctorProfile />} />
+        </Route>
+
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute roles={["ADMIN"]}>
+              <AdminLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<AdminOverview />} />
+          <Route path="appointments" element={<AdminAppointments />} />
+          <Route path="doctors" element={<AdminDoctors />} />
+          <Route path="patients" element={<AdminPatients />} />
+          <Route path="services" element={<AdminServices />} />
+          <Route path="reviews" element={<AdminReviews />} />
+          <Route path="audit-logs" element={<AdminAuditLogs />} />
+        </Route>
+
+        <Route path="/patient-dashboard" element={<Navigate to="/patient" replace />} />
+        <Route path="/doctor-dashboard" element={<Navigate to="/doctor" replace />} />
+        <Route path="/admin-dashboard" element={<Navigate to="/admin" replace />} />
+        <Route path="/patient/dashboard" element={<Navigate to="/patient" replace />} />
+      </Routes>
+    </>
+  );
+}
+
+export default App;

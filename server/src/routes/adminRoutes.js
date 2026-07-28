@@ -1,0 +1,104 @@
+import express from "express";
+import { protect, restrictTo } from "../middlewares/auth.js";
+import {
+    adminDashboard,
+    assignDoctor,
+    getAllDoctors,
+    createDoctor,
+    getDoctorById,
+    getAllAppointments,
+    updateDoctor,
+    deleteDoctor,
+    updatePatient,
+    getAllPatients,
+    getPatientById,
+    deletePatient,
+    getAllReviews,
+    getAuditLogs,
+} from "../controllers/adminController.js";
+const router = express.Router();
+router.put(
+    "/appointments/:id/assign",
+    protect,
+    restrictTo("ADMIN"),
+    assignDoctor
+);
+router.put(
+  "/doctors/:id",
+  protect,
+  restrictTo("ADMIN"),
+  updateDoctor
+);
+router.put(
+    "/patients/:id",
+    protect,
+    restrictTo("ADMIN"),
+    updatePatient
+);
+router.get(
+  "/doctors",
+  protect,
+  restrictTo("ADMIN"),
+  getAllDoctors
+);
+router.get(
+  "/appointments",
+  protect,
+  restrictTo("ADMIN"),
+  getAllAppointments
+);
+router.get(
+  "/reviews",
+  protect,
+  restrictTo("ADMIN"),
+  getAllReviews
+);
+router.get(
+  "/audit-logs",
+  protect,
+  restrictTo("ADMIN"),
+  getAuditLogs
+);
+router.get(
+  "/doctors/:id",
+  protect,
+  restrictTo("ADMIN"),
+  getDoctorById
+);
+router.get(
+  "/dashboard",
+  protect,
+  restrictTo("ADMIN"),
+  adminDashboard
+);
+router.get(
+    "/patients",
+    protect,
+    restrictTo("ADMIN"),
+    getAllPatients
+);
+router.get(
+    "/patients/:id",
+    protect,
+    restrictTo("ADMIN"),
+    getPatientById
+);
+router.post(
+    "/doctors",
+    protect,
+    restrictTo("ADMIN"),
+    createDoctor
+);
+router.delete(
+  "/doctors/:id",
+  protect,
+ restrictTo("ADMIN"),
+  deleteDoctor
+);
+router.delete(
+    "/patients/:id",
+    protect,
+    restrictTo("ADMIN"),
+    deletePatient
+);
+export default router;

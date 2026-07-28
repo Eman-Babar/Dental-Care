@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 320" role="img" aria-label="Default male doctor avatar">
+  <rect width="320" height="320" fill="#e8f4f3"/>
+  <circle cx="160" cy="112" r="62" fill="#9ec5ff"/>
+  <path d="M56 286c10-56 52-92 104-92s94 36 104 92H56z" fill="#0a6b6b"/>
+  <circle cx="138" cy="104" r="8" fill="#142424"/>
+  <circle cx="182" cy="104" r="8" fill="#142424"/>
+  <path d="M132 134c7 10 17 16 28 16s21-6 28-16" fill="none" stroke="#142424" stroke-width="6" stroke-linecap="round"/>
+  <path d="M100 250h120" stroke="#ffffff" stroke-width="12" stroke-linecap="round"/>
+  <path d="M160 210v76" stroke="#ffffff" stroke-width="12" stroke-linecap="round"/>
+</svg>
