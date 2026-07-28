@@ -1,5 +1,4 @@
 import prisma from '../config/prisma.js';
-import { sendEmail } from '../config/nodemailer.js';
 import { validateDentalProblem } from '../utils/dentalProblem.js';
 import { writeAuditLog } from '../utils/auditLog.js';
 import {
@@ -305,26 +304,8 @@ export const updateAppointmentStatus = async (req, res) => {
       data: { status },
     });
 
-    // Send email update notification
-    await sendEmail({
-      to: appointment.email,
-      subject: `Dental Appointment ${status.toUpperCase()}`,
-      text: `Dear ${appointment.patientName},\n\nYour appointment request for ${appointment.service.title} on ${appointment.appointmentDate} at ${appointment.appointmentTime} has been ${status}.\n\nBest regards,\nDental Care Clinic`,
-      html: `
-        <h3>Dear ${appointment.patientName},</h3>
-        <p>Your appointment status has been updated:</p>
-        <ul>
-          <li><strong>Service:</strong> ${appointment.service.title}</li>
-          <li><strong>Date:</strong> ${appointment.appointmentDate}</li>
-          <li><strong>Time:</strong> ${appointment.appointmentTime}</li>
-          <li><strong>Status:</strong> <span style="text-transform: capitalize; font-weight: bold;">${status}</span></li>
-        </ul>
-        <p>If you have any questions, please contact our support.</p>
-      `,
-    });
-
     return res.json({
-      message: `Appointment status updated to ${status} and email notification sent.`,
+      message: `Appointment status updated to ${status}.`,
       appointment: updatedAppointment,
     });
   } catch (error) {

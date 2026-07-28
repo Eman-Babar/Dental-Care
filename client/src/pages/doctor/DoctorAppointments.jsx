@@ -209,6 +209,11 @@ function DoctorAppointments() {
                     {item.service?.title} · {formatDate(item.appointmentDate)} ·{" "}
                     {item.appointmentTime}
                   </p>
+                  {item.status === "CANCELLED" && item.cancellationReason && (
+                    <p className="mt-2 text-sm text-[var(--danger)]">
+                      Patient cancelled: {item.cancellationReason}
+                    </p>
+                  )}
                 </div>
                 <span className="text-xs font-semibold uppercase tracking-wide text-[var(--brand)]">
                   {item.status}

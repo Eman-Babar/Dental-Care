@@ -1,4 +1,6 @@
 import prisma from "../config/prisma.js";
+import { writeAuditLog } from "../utils/auditLog.js";
+import { validateAppointmentSlot } from "../utils/appointmentValidation.js";
 // @desc Patient Dashboard
 // @route GET /api/patient/dashboard
 // @access Private (PATIENT)
@@ -196,4 +198,135 @@ export const appointmentHistory = async (req, res) => {
             message: "Internal server error",
         });
     }
+};
+
+export const cancelMyAppointment = async (req, res) => {
+  try {
+    const appointmentId = Number(req.params.id);
+    const { cancellationReason } = req.body;
+
+    if (!cancellationReason?.trim()) {
+      return res.status(400).json({
+        message: "Please provide a reason for cancellation.",
+      });
+    }
+
+    const appointment = await prisma.appointment.findFirst({
+      where: {
+        id: appointmentId,
+        patientId: req.user.id,
+        status: { in: ["PENDING", "APPROVED"] },
+      }
+    });
+
+    if (!appointment) {
+      return res.status(404).json({
+        message: "Active appointment not found.",
+      });
+    }
+
+    const updated = await prisma.appointment.update({
+      where: { id: appointmentId },
+      data: {
+        status: "CANCELLED",
+        cancellationReason: cancellationReason.trim(),
+      },
+      include: {
+        doctor: { select: { id: true, name: true, email: true } },
+        service: true,
+      },
+    });
+
+    await writeAuditLog({
+      actorId: req.user.id,
+      actorRole: req.user.role,
+      action: "APPOINTMENT_CANCELLED_BY_PATIENT",
+      entity: "Appointment",
+      entityId: updated.id,
+      details: `Patient cancelled: ${updated.service?.title || "appointment"}`,
+    });
+
+    return res.json({
+      success: true,
+      message: "Appointment cancelled successfully.",
+      appointment: updated,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const rescheduleMyAppointment = async (req, res) => {
+  try {
+    const appointmentId = Number(req.params.id);
+    const { appointmentDate, appointmentTime } = req.body;
+
+    if (!appointmentDate || !appointmentTime) {
+      return res.status(400).json({
+        message: "New date and time are required.",
+      });
+    }
+
+    const appointment = await prisma.appointment.findFirst({
+      where: {
+        id: appointmentId,
+        patientId: req.user.id,
+        status: { in: ["PENDING", "APPROVED"] },
+      }
+    });
+
+    if (!appointment) {
+      return res.status(404).json({
+        message: "Active appointment not found.",
+      });
+    }
+
+    const slotCheck = await validateAppointmentSlot({
+      doctorId: appointment.doctorId,
+      appointmentDate,
+      appointmentTime,
+      excludeAppointmentId: appointment.id,
+    });
+
+    if (!slotCheck.ok) {
+      return res.status(400).json({ message: slotCheck.message });
+    }
+
+    const updated = await prisma.appointment.update({
+      where: { id: appointmentId },
+      data: {
+        appointmentDate: new Date(appointmentDate),
+        appointmentTime,
+        status: "PENDING",
+        rejectionReason: null,
+        cancellationReason: null,
+      },
+      include: {
+        doctor: {
+          include: { doctorProfile: true },
+        },
+        service: true,
+      },
+    });
+
+    await writeAuditLog({
+      actorId: req.user.id,
+      actorRole: req.user.role,
+      action: "APPOINTMENT_RESCHEDULED_BY_PATIENT",
+      entity: "Appointment",
+      entityId: updated.id,
+      details: `Rescheduled to ${appointmentDate} ${appointmentTime}`,
+    });
+
+    return res.json({
+      success: true,
+      message:
+        "Appointment rescheduled. It is pending doctor review for the new time.",
+      appointment: updated,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
 };

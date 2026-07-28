@@ -125,6 +125,8 @@ model Appointment {
 
   rejectionReason   String?
 
+  cancellationReason String?
+
   status            AppointmentStatus @default(PENDING)
 
   createdAt         DateTime @default(now())

@@ -7,6 +7,8 @@ import {
   getMyAppointments,
   upcomingAppointments,
   appointmentHistory,
+  cancelMyAppointment,
+  rescheduleMyAppointment,
 } from "../controllers/patientController.js";
 
 import {
@@ -30,6 +32,8 @@ router.get("/profile", getMyProfile);
 router.get("/appointments", getMyAppointments);
 router.get("/upcoming", upcomingAppointments);
 router.get("/history", appointmentHistory);
+router.put("/appointments/:id/cancel", cancelMyAppointment);
+router.put("/appointments/:id/reschedule", rescheduleMyAppointment);
 router.get("/reviews", getMyReviews);
 router.get("/reviews/eligible", getReviewableAppointments);
 router.post("/reviews", createReview);

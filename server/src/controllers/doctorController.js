@@ -225,6 +225,7 @@ export const approveAppointment = async (req, res) => {
                 status: "APPROVED"
             }
         });
+
         return res.json({
             success: true,
             message: "Appointment approved.",
@@ -261,6 +262,7 @@ export const rejectAppointment = async (req, res) => {
                 rejectionReason
             }
         });
+
         return res.json({
             success: true,
             message: "Appointment rejected.",
