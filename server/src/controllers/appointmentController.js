@@ -8,44 +8,16 @@ import {
   SLOT_MINUTES,
 } from '../utils/doctorAvailability.js';
 import { doctorOffersService } from '../utils/doctorServices.js';
-import { sendEmail } from '../config/nodemailer.js';
+import {
+  notifyClinicNewRequest,
+  notifyPatientStatusChange,
+} from '../utils/appointmentEmails.js';
 
 const CLINIC_OPEN_HOUR = 9; // 9:00 AM
 const CLINIC_CLOSE_HOUR = 17; // 5:00 PM
 
 async function notifyClinicInbox(appointment) {
-  const clinicEmail =
-    process.env.CLINIC_EMAIL ||
-    process.env.EMAIL_FROM?.match(/<([^>]+)>/)?.[1] ||
-    process.env.EMAIL_USER;
-
-  if (!clinicEmail) {
-    console.warn("CLINIC_EMAIL not set — skipping clinic notification email.");
-    return;
-  }
-
-  const when = `${new Date(appointment.appointmentDate).toLocaleDateString("en-GB")} at ${appointment.appointmentTime}`;
-  const subject = `New appointment request #${appointment.id}`;
-  const text = [
-    "A new appointment request was submitted on DentalCare.",
-    "",
-    `Patient: ${appointment.patient?.name || "—"}`,
-    `Email: ${appointment.patient?.email || "—"}`,
-    `Phone: ${appointment.patient?.phone || "—"}`,
-    `Service: ${appointment.service?.title || "—"}`,
-    `Doctor: ${appointment.doctor?.name || "Unassigned"}`,
-    `When: ${when}`,
-    `Problem: ${appointment.currentProblem}`,
-    `Status: ${appointment.status}`,
-    `Submitted: ${new Date(appointment.createdAt).toLocaleString()}`,
-  ].join("\n");
-
-  await sendEmail({
-    to: clinicEmail,
-    subject,
-    text,
-    html: `<pre style="font-family:sans-serif;white-space:pre-wrap">${text}</pre>`,
-  });
+  return notifyClinicNewRequest(appointment);
 }
 
 async function findOrCreateGuestPatient({ name, email, phone }) {
@@ -552,6 +524,8 @@ export const updateAppointmentStatus = async (req, res) => {
       return res.status(404).json({ message: "Appointment not found" });
     }
 
+    const previousStatus = appointment.status;
+
     const data = { status: normalized };
     if (normalized === "REJECTED" && rejectionReason) {
       data.rejectionReason = String(rejectionReason);
@@ -578,6 +552,15 @@ export const updateAppointmentStatus = async (req, res) => {
       entityId: updatedAppointment.id,
       details: `Status set to ${normalized}`,
     });
+
+    if (
+      previousStatus !== normalized &&
+      ["APPROVED", "REJECTED", "COMPLETED"].includes(normalized)
+    ) {
+      notifyPatientStatusChange(updatedAppointment, normalized).catch((err) =>
+        console.error("Patient status email failed:", err)
+      );
+    }
 
     return res.json({
       success: true,

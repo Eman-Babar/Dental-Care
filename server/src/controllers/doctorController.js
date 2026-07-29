@@ -4,6 +4,13 @@ import {
   summarizeAvailability,
 } from '../utils/doctorAvailability.js';
 import { parseServiceIds } from '../utils/doctorServices.js';
+import { notifyPatientStatusChange } from '../utils/appointmentEmails.js';
+
+const appointmentEmailInclude = {
+  patient: { select: { id: true, name: true, email: true, phone: true } },
+  doctor: { select: { id: true, name: true, email: true } },
+  service: true,
+};
 // @desc Doctor Dashboard
 // @route GET /api/doctor/dashboard
 // @access Private (DOCTOR)
@@ -223,8 +230,13 @@ export const approveAppointment = async (req, res) => {
             },
             data: {
                 status: "APPROVED"
-            }
+            },
+            include: appointmentEmailInclude,
         });
+
+        notifyPatientStatusChange(updated, "APPROVED").catch((err) =>
+          console.error("Patient approval email failed:", err)
+        );
 
         return res.json({
             success: true,
@@ -260,8 +272,13 @@ export const rejectAppointment = async (req, res) => {
             data: {
                 status: "REJECTED",
                 rejectionReason
-            }
+            },
+            include: appointmentEmailInclude,
         });
+
+        notifyPatientStatusChange(updated, "REJECTED").catch((err) =>
+          console.error("Patient rejection email failed:", err)
+        );
 
         return res.json({
             success: true,
