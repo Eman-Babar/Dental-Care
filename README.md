@@ -74,9 +74,9 @@ Update `client/src/api/axios.js` `baseURL` if the API is hosted elsewhere.
 
 | Role | Email | Password |
 |---|---|---|
-| Admin | admin@dentalcare.com | admin123 |
-| Doctor | doctor@dentalcare.com | doctor123 |
-| Patient | patient@dentalcare.com | patient123 |
+| Admin | admingmail.com | ******** |
+| Doctor | doctorgmail.com | ******** |
+| Patient | patientgmail.com | ******** |
 
 ## Key URLs
 
