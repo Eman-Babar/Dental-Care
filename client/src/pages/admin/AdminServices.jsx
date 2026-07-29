@@ -8,11 +8,13 @@ const empty = {
   description: "",
   duration: "",
   price: "",
+  image: "",
 };
 
 function AdminServices() {
   const [services, setServices] = useState([]);
   const [form, setForm] = useState(empty);
+  const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -36,21 +38,44 @@ function AdminServices() {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleCreate = async (e) => {
+  const startEdit = (service) => {
+    setEditingId(service.id);
+    setForm({
+      title: service.title || "",
+      description: service.description || "",
+      duration: service.duration ?? "",
+      price: service.price ?? "",
+      image: service.image || "",
+    });
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setForm(empty);
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
+    const payload = {
+      title: form.title,
+      description: form.description,
+      duration: form.duration || undefined,
+      price: form.price || undefined,
+      image: form.image || undefined,
+    };
     try {
-      await api.post("/services", {
-        title: form.title,
-        description: form.description,
-        duration: form.duration || undefined,
-        price: form.price || undefined,
-      });
-      toast.success("Service added");
-      setForm(empty);
+      if (editingId) {
+        await api.put(`/services/${editingId}`, payload);
+        toast.success("Service updated");
+      } else {
+        await api.post("/services", payload);
+        toast.success("Service added");
+      }
+      cancelEdit();
       await load();
     } catch (err) {
-      toast.error(err.response?.data?.message || "Could not add service");
+      toast.error(err.response?.data?.message || "Could not save service");
     } finally {
       setSaving(false);
     }
@@ -61,6 +86,7 @@ function AdminServices() {
     try {
       await api.delete(`/services/${id}`);
       toast.success("Service deleted");
+      if (editingId === id) cancelEdit();
       await load();
     } catch (err) {
       toast.error(err.response?.data?.message || "Delete failed");
@@ -74,7 +100,7 @@ function AdminServices() {
       <section>
         <h2 className="font-display text-2xl font-semibold">Services</h2>
         <p className="mt-1 text-sm text-[var(--muted)]">
-          Manage clinic treatments patients can book
+          Edit titles and descriptions patients see on the site
         </p>
         <div className="mt-5 space-y-3">
           {services.length === 0 ? (
@@ -94,13 +120,22 @@ function AdminServices() {
                     {service.price != null ? `Rs ${service.price}` : "Price n/a"}
                   </p>
                 </div>
-                <button
-                  type="button"
-                  className="btn-secondary !px-3 !py-2 text-sm"
-                  onClick={() => handleDelete(service.id)}
-                >
-                  Delete
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    className="btn-secondary !px-3 !py-2 text-sm"
+                    onClick={() => startEdit(service)}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-secondary !px-3 !py-2 text-sm"
+                    onClick={() => handleDelete(service.id)}
+                  >
+                    Delete
+                  </button>
+                </div>
               </article>
             ))
           )}
@@ -108,9 +143,11 @@ function AdminServices() {
       </section>
 
       <section className="mx-auto max-w-2xl">
-        <h2 className="font-display text-2xl font-semibold">Add service</h2>
+        <h2 className="font-display text-2xl font-semibold">
+          {editingId ? "Edit service" : "Add service"}
+        </h2>
         <form
-          onSubmit={handleCreate}
+          onSubmit={handleSubmit}
           className="mt-5 space-y-4 border border-[var(--line)] bg-[var(--surface)] p-6"
         >
           <div>
@@ -134,6 +171,16 @@ function AdminServices() {
               className="field resize-none"
               placeholder="What this treatment includes..."
               required
+            />
+          </div>
+          <div>
+            <label className="label">Image URL (optional)</label>
+            <input
+              name="image"
+              value={form.image}
+              onChange={handleChange}
+              className="field"
+              placeholder="https://..."
             />
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
@@ -160,9 +207,20 @@ function AdminServices() {
               />
             </div>
           </div>
-          <button type="submit" className="btn-primary" disabled={saving}>
-            {saving ? "Adding..." : "Add service"}
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button type="submit" className="btn-primary" disabled={saving}>
+              {saving ? "Saving..." : editingId ? "Save changes" : "Add service"}
+            </button>
+            {editingId && (
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={cancelEdit}
+              >
+                Cancel
+              </button>
+            )}
+          </div>
         </form>
       </section>
     </div>

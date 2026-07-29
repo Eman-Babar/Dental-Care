@@ -5,6 +5,8 @@ import toast from "react-hot-toast";
 import api from "../api/axios";
 import Loader from "../components/common/Loader";
 import Footer from "../components/layout/Footer";
+import Seo from "../components/common/Seo";
+import { useSiteContent } from "../hooks/useSiteContent";
 
 const DEFAULT_MALE_IMAGE = "/doctor-male.svg";
 const DEFAULT_FEMALE_IMAGE = "/doctor-female.svg";
@@ -24,8 +26,15 @@ const FEMALE_NAME_HINTS = [
 ];
 
 function DoctorsPage() {
+  const { get } = useSiteContent();
   const [doctors, setDoctors] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const heading = get("doctors.heading", "Our dental team");
+  const subtext = get(
+    "doctors.subtext",
+    "Licensed specialists dedicated to gentle, evidence-based care at DentalCare Clinic."
+  );
 
   const apiRoot = useMemo(() => {
     return api.defaults.baseURL?.replace(/\/api\/?$/, "") || "http://localhost:5000";
@@ -57,14 +66,14 @@ function DoctorsPage() {
 
   return (
     <div className="page-shell">
+      <Seo title="Doctors" description={subtext} />
       <section className="section-pad pb-8">
         <div className="mx-auto max-w-6xl">
           <h1 className="font-display text-3xl font-semibold text-[var(--ink)] sm:text-4xl md:text-5xl">
-            Our dental team
+            {heading}
           </h1>
           <p className="mt-4 max-w-xl text-sm text-[var(--muted)] sm:text-base">
-            Licensed specialists dedicated to gentle, evidence-based care at
-            DentalCare Clinic.
+            {subtext}
           </p>
         </div>
       </section>
@@ -77,34 +86,34 @@ function DoctorsPage() {
             </div>
           ) : (
             doctors.map((doctor, index) => (
-            <motion.article
-              key={doctor.id ?? doctor.name ?? index}
-              initial={{ opacity: 0, y: 18 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.4, delay: index * 0.08 }}
-            >
-              <img
-                src={getImageUrl(doctor.image) || getDoctorFallback(doctor)}
-                alt={doctor.name || "Doctor"}
-                className="h-80 w-full rounded-2xl object-cover"
-              />
-              <h2 className="mt-5 font-display text-2xl font-semibold">
-                {doctor.name}
-              </h2>
-              <p className="mt-1 text-sm font-medium text-[var(--brand)]">
-                {doctor.doctorProfile?.specialization || "Dentist"}
-              </p>
-              <p className="mt-3 text-sm text-[var(--muted)]">
-                {doctor.doctorProfile?.bio || ""}
-              </p>
-              <Link
-                to="/appointment"
-                className="btn-secondary mt-5 inline-flex !px-4 !py-2 text-sm"
+              <motion.article
+                key={doctor.id ?? doctor.name ?? index}
+                initial={{ opacity: 0, y: 18 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.4, delay: index * 0.08 }}
               >
-                Book with {doctor.name}
-              </Link>
-            </motion.article>
+                <img
+                  src={getImageUrl(doctor.image) || getDoctorFallback(doctor)}
+                  alt={`${doctor.name || "Doctor"} — ${doctor.doctorProfile?.specialization || "Dentist"}`}
+                  className="h-80 w-full rounded-2xl object-cover"
+                />
+                <h2 className="mt-5 font-display text-2xl font-semibold">
+                  {doctor.name}
+                </h2>
+                <p className="mt-1 text-sm font-medium text-[var(--brand)]">
+                  {doctor.doctorProfile?.specialization || "Dentist"}
+                </p>
+                <p className="mt-3 text-sm text-[var(--muted)]">
+                  {doctor.doctorProfile?.bio || ""}
+                </p>
+                <Link
+                  to="/appointment"
+                  className="btn-secondary mt-5 inline-flex !px-4 !py-2 text-sm"
+                >
+                  Book with {doctor.name}
+                </Link>
+              </motion.article>
             ))
           )}
         </div>

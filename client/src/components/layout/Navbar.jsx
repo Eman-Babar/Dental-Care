@@ -5,7 +5,8 @@ import { useAuth } from "../../context/AuthContext";
 import { dashboardPathForRole } from "../../utils/storage";
 
 const links = [
-  { to: "/home", label: "Home" },
+  { to: "/", label: "Home", end: true },
+  { to: "/about", label: "About" },
   { to: "/services", label: "Services" },
   { to: "/doctors", label: "Doctors" },
   { to: "/appointment", label: "Book Visit" },
@@ -20,7 +21,7 @@ function Navbar() {
     <header className="sticky top-0 z-50 border-b border-[var(--line)] bg-[rgba(243,248,247,0.92)] backdrop-blur-md">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:gap-4 sm:px-5 sm:py-3.5">
         <Link
-          to="/home"
+          to="/"
           className="font-display text-xl font-semibold text-[var(--brand-deep)] sm:text-2xl"
         >
           DentalCare
@@ -31,6 +32,7 @@ function Navbar() {
             <NavLink
               key={link.to}
               to={link.to}
+              end={link.end}
               className={({ isActive }) =>
                 `text-sm font-medium transition-colors ${
                   isActive
@@ -84,6 +86,7 @@ function Navbar() {
               <NavLink
                 key={link.to}
                 to={link.to}
+                end={link.end}
                 onClick={() => setOpen(false)}
                 className={({ isActive }) =>
                   `rounded-lg px-3 py-2.5 text-sm font-medium ${

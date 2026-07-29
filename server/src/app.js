@@ -11,6 +11,7 @@ import patientRoutes from "./routes/patientRoutes.js";
 import doctorRoutes from "./routes/doctorRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import publicDoctorRoutes from "./routes/publicDoctorRoutes.js";
+import contentRoutes from "./routes/contentRoutes.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -37,6 +38,7 @@ app.use('/api/doctors', publicDoctorRoutes);
 app.use('/api/doctor', doctorRoutes);
 app.use("/api/patient", patientRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/content", contentRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {

@@ -12,11 +12,22 @@ function formatDate(value) {
   });
 }
 
+function formatTimestamp(value) {
+  if (!value) return "—";
+  return new Date(value).toLocaleString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 function AdminAppointments() {
   const [appointments, setAppointments] = useState([]);
   const [doctors, setDoctors] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [assigning, setAssigning] = useState(null);
+  const [busyId, setBusyId] = useState(null);
 
   const load = async () => {
     setLoading(true);
@@ -40,7 +51,7 @@ function AdminAppointments() {
 
   const assignDoctor = async (appointmentId, doctorId) => {
     if (!doctorId) return;
-    setAssigning(appointmentId);
+    setBusyId(appointmentId);
     try {
       await api.put(`/admin/appointments/${appointmentId}/assign`, {
         doctorId: Number(doctorId),
@@ -50,7 +61,20 @@ function AdminAppointments() {
     } catch (err) {
       toast.error(err.response?.data?.message || "Assign failed");
     } finally {
-      setAssigning(null);
+      setBusyId(null);
+    }
+  };
+
+  const setStatus = async (appointmentId, status) => {
+    setBusyId(appointmentId);
+    try {
+      await api.put(`/appointments/${appointmentId}/status`, { status });
+      toast.success(`Marked as ${status}`);
+      await load();
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Status update failed");
+    } finally {
+      setBusyId(null);
     }
   };
 
@@ -58,9 +82,9 @@ function AdminAppointments() {
 
   return (
     <div>
-      <h2 className="font-display text-2xl font-semibold">All appointments</h2>
+      <h2 className="font-display text-2xl font-semibold">Appointment requests</h2>
       <p className="mt-1 text-sm text-[var(--muted)]">
-        Review clinic bookings and reassign doctors when needed
+        View incoming requests, confirm or decline, and mark as handled
       </p>
 
       <div className="mt-6 space-y-3">
@@ -72,24 +96,39 @@ function AdminAppointments() {
               key={item.id}
               className="border border-[var(--line)] bg-[var(--surface)] p-4"
             >
-              <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                <div>
-                  <p className="font-semibold text-[var(--ink)]">
-                    {item.patient?.name} → {item.doctor?.name || "Unassigned"}
-                  </p>
-                  <p className="text-sm text-[var(--muted)]">
-                    {item.service?.title} · {formatDate(item.appointmentDate)} ·{" "}
-                    {item.appointmentTime}
-                  </p>
-                  <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-[var(--brand)]">
+              <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <p className="font-semibold text-[var(--ink)]">
+                      {item.patient?.name} → {item.doctor?.name || "Unassigned"}
+                    </p>
+                    <p className="text-sm text-[var(--muted)]">
+                      {item.service?.title} · {formatDate(item.appointmentDate)} ·{" "}
+                      {item.appointmentTime}
+                    </p>
+                    <p className="mt-1 text-sm text-[var(--muted)]">
+                      {item.patient?.email}
+                      {item.patient?.phone ? ` · ${item.patient.phone}` : ""}
+                    </p>
+                    {item.currentProblem && (
+                      <p className="mt-2 text-sm text-[var(--ink)]">
+                        {item.currentProblem}
+                      </p>
+                    )}
+                    <p className="mt-2 text-xs text-[var(--muted)]">
+                      Received: {formatTimestamp(item.createdAt)}
+                    </p>
+                  </div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-[var(--brand)]">
                     {item.status}
                   </p>
                 </div>
-                <div className="flex w-full items-center gap-2 lg:w-auto lg:min-w-[16rem]">
+
+                <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
                   <select
-                    className="field !py-2"
+                    className="field !py-2 sm:max-w-[16rem]"
                     defaultValue=""
-                    disabled={assigning === item.id}
+                    disabled={busyId === item.id}
                     onChange={(e) => assignDoctor(item.id, e.target.value)}
                   >
                     <option value="">Assign / change doctor</option>
@@ -99,6 +138,33 @@ function AdminAppointments() {
                       </option>
                     ))}
                   </select>
+
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      className="btn-primary !px-3 !py-2 text-sm"
+                      disabled={busyId === item.id || item.status === "APPROVED"}
+                      onClick={() => setStatus(item.id, "APPROVED")}
+                    >
+                      Confirm
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-secondary !px-3 !py-2 text-sm"
+                      disabled={busyId === item.id || item.status === "REJECTED"}
+                      onClick={() => setStatus(item.id, "REJECTED")}
+                    >
+                      Decline
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-secondary !px-3 !py-2 text-sm"
+                      disabled={busyId === item.id || item.status === "COMPLETED"}
+                      onClick={() => setStatus(item.id, "COMPLETED")}
+                    >
+                      Mark handled
+                    </button>
+                  </div>
                 </div>
               </div>
             </article>

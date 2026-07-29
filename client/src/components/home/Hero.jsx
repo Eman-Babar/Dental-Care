@@ -1,14 +1,33 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
+import { useSiteContent } from "../../hooks/useSiteContent";
+import Seo from "../common/Seo";
 
 function Hero() {
+  const { get } = useSiteContent();
+
+  const brand = get("home.brand", "DentalCare");
+  const headline = get("home.headline", "Calm visits. Lasting smiles.");
+  const subtext = get(
+    "home.subtext",
+    "Family dentistry with gentle hands, modern equipment, and care that fits your schedule."
+  );
+  const heroImage = get(
+    "home.hero_image",
+    "https://images.unsplash.com/photo-1629909613654-28e377c37b09?auto=format&fit=crop&w=2000&q=80"
+  );
+
   return (
     <section className="relative min-h-[100svh] overflow-hidden">
+      <Seo
+        title="DentalCare — Family Dental Clinic"
+        description={subtext}
+      />
       <motion.img
         initial={{ scale: 1.08 }}
         animate={{ scale: 1 }}
         transition={{ duration: 1.4, ease: "easeOut" }}
-        src="https://images.unsplash.com/photo-1629909613654-28e377c37b09?auto=format&fit=crop&w=2000&q=80"
+        src={heroImage}
         alt="Bright modern dental clinic interior"
         className="absolute inset-0 h-full w-full object-cover"
       />
@@ -22,14 +41,13 @@ function Hero() {
           className="max-w-xl text-white"
         >
           <p className="font-display text-4xl font-semibold tracking-tight sm:text-5xl md:text-7xl">
-            DentalCare
+            {brand}
           </p>
           <h1 className="mt-4 font-display text-2xl font-medium leading-snug text-white/95 sm:mt-5 sm:text-3xl md:text-4xl">
-            Calm visits. Lasting smiles.
+            {headline}
           </h1>
           <p className="mt-3 max-w-md text-sm text-white/80 sm:mt-4 sm:text-base md:text-lg">
-            Family dentistry with gentle hands, modern equipment, and care that
-            fits your schedule.
+            {subtext}
           </p>
           <div className="mt-6 flex flex-col gap-3 sm:mt-8 sm:flex-row sm:flex-wrap">
             <Link

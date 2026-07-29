@@ -174,3 +174,15 @@ model AuditLog {
 
   @@map("audit_logs")
 }
+
+/// Editable site copy / images for staff (basic CMS)
+model SiteContent {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique
+  label     String
+  value     String
+  group     String   @default("general")
+  updatedAt DateTime @updatedAt
+
+  @@map("site_content")
+}

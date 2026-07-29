@@ -43,8 +43,8 @@ export const getServiceById = async (req, res) => {
 // @route   POST /api/services
 // @access  Private (ADMIN)
 export const createService = async (req, res) => {
-  const { title, description, duration, price } = req.body;
-  const image = req.file ? `/uploads/${req.file.filename}` : '';
+  const { title, description, duration, price, image: imageUrl } = req.body;
+  const image = req.file ? `/uploads/${req.file.filename}` : imageUrl || '';
 
   try {
     if (!title || !description) {
@@ -103,6 +103,8 @@ export const updateService = async (req, res) => {
     if (price !== undefined) updateData.price = price ? Number(price) : null;
     if (req.file) {
       updateData.image = `/uploads/${req.file.filename}`;
+    } else if (req.body.image !== undefined) {
+      updateData.image = req.body.image || null;
     }
 
     const updatedService = await prisma.service.update({

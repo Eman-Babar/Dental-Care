@@ -1,5 +1,6 @@
 import pkg from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { DEFAULT_SITE_CONTENT } from "../src/utils/defaultSiteContent.js";
 
 const { PrismaClient } = pkg;
 const prisma = new PrismaClient();
@@ -7,7 +8,10 @@ const prisma = new PrismaClient();
 async function main() {
   console.log("Seeding DentalCare database...");
 
+  await prisma.review.deleteMany({});
   await prisma.appointment.deleteMany({});
+  await prisma.auditLog.deleteMany({});
+  await prisma.siteContent.deleteMany({});
   await prisma.doctorProfile.deleteMany({});
   await prisma.service.deleteMany({});
   await prisma.user.deleteMany({});
@@ -135,12 +139,18 @@ async function main() {
     },
   });
 
+  for (const item of DEFAULT_SITE_CONTENT) {
+    await prisma.siteContent.create({ data: item });
+  }
+
   console.log("Seed complete.");
   console.log("Admin:   admin@dentalcare.com / admin123");
   console.log("Doctor:  doctor@dentalcare.com / doctor123");
   console.log("Doctor2: sarah@dentalcare.com / doctor123");
   console.log("Patient: patient@dentalcare.com / patient123");
-  console.log(`Created admin id=${admin.id}, doctors=${doctor1.id},${doctor2.id}, patient=${patient.id}`);
+  console.log(
+    `Created admin id=${admin.id}, doctors=${doctor1.id},${doctor2.id}, patient=${patient.id}`
+  );
 }
 
 main()

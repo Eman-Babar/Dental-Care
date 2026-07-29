@@ -4,6 +4,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import DoctorRegister from "./pages/DoctorRegister";
 import Services from "./pages/Services";
+import About from "./pages/About";
 import Navbar from "./components/layout/Navbar";
 import Appointment from "./pages/Appointment";
 import Doctors from "./pages/Doctors";
@@ -31,6 +32,7 @@ import AdminPatients from "./pages/admin/AdminPatients";
 import AdminReviews from "./pages/admin/AdminReviews";
 import AdminServices from "./pages/admin/AdminServices";
 import AdminAuditLogs from "./pages/admin/AdminAuditLogs";
+import AdminContent from "./pages/admin/AdminContent";
 import { useAuth } from "./context/AuthContext";
 import { dashboardPathForRole } from "./utils/storage";
 import Loader from "./components/common/Loader";
@@ -48,8 +50,7 @@ function App() {
 
   if (
     loading &&
-    (location.pathname === "/" ||
-      location.pathname === "/register" ||
+    (location.pathname === "/register" ||
       location.pathname === "/register-doctor" ||
       location.pathname === "/login")
   ) {
@@ -71,7 +72,7 @@ function App() {
             isAuthenticated && user ? (
               <Navigate to={dashboardPathForRole(user.role)} replace />
             ) : (
-              <Navigate to="/login" replace />
+              <Home />
             )
           }
         />
@@ -79,6 +80,7 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/register-doctor" element={<DoctorRegister />} />
         <Route path="/home" element={<Home />} />
+        <Route path="/about" element={<About />} />
         <Route path="/services" element={<Services />} />
         <Route path="/appointment" element={<Appointment />} />
         <Route path="/doctors" element={<Doctors />} />
@@ -130,6 +132,7 @@ function App() {
           <Route path="patients" element={<AdminPatients />} />
           <Route path="services" element={<AdminServices />} />
           <Route path="reviews" element={<AdminReviews />} />
+          <Route path="content" element={<AdminContent />} />
           <Route path="audit-logs" element={<AdminAuditLogs />} />
         </Route>
 

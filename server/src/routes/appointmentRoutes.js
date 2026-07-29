@@ -1,6 +1,7 @@
 import express from 'express';
 import {
   createAppointment,
+  createPublicAppointment,
   getAllAppointments,
   getAppointmentById,
   getMyAppointments,
@@ -11,7 +12,10 @@ import { protect, restrictTo } from '../middlewares/auth.js';
 
 const router = express.Router();
 
-// Public route to book an appointment
+// Public visitor booking (no login)
+router.post("/public", createPublicAppointment);
+
+// Authenticated patient booking
 router.post(
     "/",
     protect,
