@@ -102,8 +102,8 @@ App runs at `http://localhost:5173`.
 
 | Role | Email | Password |
 |---|---|---|
-| Admin | admin@dentalcare.com | admin123 |
-| Doctor | doctor@dentalcare.com | doctor123 |
+| Admin | admingmail | ******* |
+| Doctor | doctorgmail | ******** |
 | Patient | patient@dentalcare.com | patient123 |
 
 ## Key URLs
