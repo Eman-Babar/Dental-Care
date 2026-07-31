@@ -1,4 +1,4 @@
-import jwt from "jsonwebtoken";
+import { verifyAuthToken } from "../utils/jwt.js";
 
 // Verify JWT Token
 export const protect = (req, res, next) => {
@@ -18,16 +18,16 @@ export const protect = (req, res, next) => {
   }
 
   try {
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET ||
-        "dental_clinic_jwt_secret_key_change_me_in_production_12345"
-    );
-
+    const decoded = verifyAuthToken(token);
     req.user = decoded;
-
     next();
   } catch (error) {
+    if (error.message?.includes("JWT_SECRET")) {
+      console.error(error.message);
+      return res.status(500).json({
+        message: "Server auth is misconfigured.",
+      });
+    }
     return res.status(401).json({
       message: "Invalid or expired token.",
     });

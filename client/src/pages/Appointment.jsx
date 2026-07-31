@@ -6,6 +6,8 @@ import Footer from "../components/layout/Footer";
 import Seo from "../components/common/Seo";
 import { isDentalProblem } from "../utils/dentalProblem";
 import { useAuth } from "../context/AuthContext";
+import PaymentInstructions from "../components/common/PaymentInstructions";
+import { useSiteContent } from "../hooks/useSiteContent";
 
 const empty = {
   name: "",
@@ -28,6 +30,14 @@ function toLocalDateInput(date) {
 
 function Appointment() {
   const { isAuthenticated, user } = useAuth();
+  const { get } = useSiteContent();
+  const maintenanceOn = ["true", "1", "yes", "on"].includes(
+    String(get("site.maintenance", "false")).trim().toLowerCase()
+  );
+  const maintenanceMsg = get(
+    "site.maintenance_message",
+    "Online booking is temporarily paused. Please contact the clinic."
+  );
   const [services, setServices] = useState([]);
   const [doctors, setDoctors] = useState([]);
   const [form, setForm] = useState(empty);
@@ -116,21 +126,35 @@ function Appointment() {
           )}
 
           {done ? (
+            <div className="mt-8 space-y-4">
+              <div className="border border-[var(--line)] bg-[var(--surface)] p-6">
+                <p className="font-display text-xl font-semibold text-[var(--ink)]">
+                  Request received
+                </p>
+                <p className="mt-2 text-sm text-[var(--muted)]">
+                  We have your details. Staff will review and confirm. Check your
+                  email — and if a deposit is due, use the payment instructions
+                  below or your patient portal after you set a password.
+                </p>
+                <button
+                  type="button"
+                  className="btn-primary mt-6"
+                  onClick={() => setDone(false)}
+                >
+                  Submit another request
+                </button>
+              </div>
+              <PaymentInstructions />
+            </div>
+          ) : maintenanceOn ? (
             <div className="mt-8 border border-[var(--line)] bg-[var(--surface)] p-6">
               <p className="font-display text-xl font-semibold text-[var(--ink)]">
-                Request received
+                Booking paused
               </p>
-              <p className="mt-2 text-sm text-[var(--muted)]">
-                We have your details. Staff will review and confirm or suggest
-                another time. Check your email for updates.
-              </p>
-              <button
-                type="button"
-                className="btn-primary mt-6"
-                onClick={() => setDone(false)}
-              >
-                Submit another request
-              </button>
+              <p className="mt-2 text-sm text-[var(--muted)]">{maintenanceMsg}</p>
+              <Link to="/contact" className="btn-primary mt-6 inline-flex">
+                Contact the clinic
+              </Link>
             </div>
           ) : (
             <form

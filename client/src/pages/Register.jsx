@@ -5,10 +5,13 @@ import toast from "react-hot-toast";
 import api from "../api/axios";
 import { useAuth } from "../context/AuthContext";
 import PasswordInput from "../components/common/PasswordInput";
+import { useSiteContent } from "../hooks/useSiteContent";
 
 function Register() {
   const navigate = useNavigate();
   const { login } = useAuth();
+  const { get } = useSiteContent();
+  const brand = get("home.brand", "DentalCare");
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -27,7 +30,7 @@ function Register() {
     try {
       const { data } = await api.post("/auth/register", formData);
       login(data.token, data.user);
-      toast.success("Account created — welcome to DentalCare");
+      toast.success(`Account created — welcome to ${brand}`);
       navigate("/patient", { replace: true });
     } catch (err) {
       toast.error(err.response?.data?.message || "Registration failed");
@@ -46,7 +49,7 @@ function Register() {
         />
         <div className="absolute inset-0 bg-gradient-to-t from-[var(--brand-deep)]/85 via-[var(--brand)]/40 to-transparent" />
         <div className="absolute bottom-0 left-0 right-0 p-12 text-white">
-          <p className="font-display text-4xl font-semibold">DentalCare</p>
+          <p className="font-display text-4xl font-semibold">{brand}</p>
           <p className="mt-3 max-w-sm text-white/85">
             Join our patient community and book visits in a few taps.
           </p>
@@ -61,7 +64,7 @@ function Register() {
           className="w-full max-w-md"
         >
           <p className="font-display text-3xl font-semibold text-[var(--brand-deep)] lg:hidden">
-            DentalCare
+            {brand}
           </p>
           <h1 className="mt-4 font-display text-3xl font-semibold text-[var(--ink)] md:text-4xl">
             Patient registration
@@ -130,7 +133,7 @@ function Register() {
               />
             </div>
             <button type="submit" className="btn-primary w-full" disabled={loading}>
-              {loading ? "Creating account..." : "Join DentalCare"}
+              {loading ? "Creating account..." : `Join ${brand}`}
             </button>
           </form>
 
@@ -140,11 +143,8 @@ function Register() {
               Sign in
             </Link>
           </p>
-          <p className="mt-2 text-center text-sm text-[var(--muted)]">
-            Are you a doctor?{" "}
-            <Link to="/register-doctor" className="font-semibold text-[var(--brand)]">
-              Doctor registration
-            </Link>
+          <p className="mt-2 text-center text-xs text-[var(--muted)]">
+            Clinic staff accounts are created by the admin only.
           </p>
         </motion.div>
       </div>

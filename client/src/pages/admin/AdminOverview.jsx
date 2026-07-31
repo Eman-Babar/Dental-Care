@@ -59,9 +59,54 @@ function ServiceChart({ data }) {
   );
 }
 
+function DailyTrendChart({ data }) {
+  const maxVal = useMemo(
+    () => Math.max(...data.map((d) => Math.max(d.created || 0, d.completed || 0)), 1),
+    [data]
+  );
+
+  if (!data?.length) return null;
+
+  return (
+    <div className="mt-6">
+      <div className="flex h-40 items-end gap-1.5 sm:gap-2">
+        {data.map((day) => (
+          <div key={day.date} className="flex min-w-0 flex-1 flex-col items-center gap-1">
+            <div className="flex h-28 w-full items-end justify-center gap-0.5">
+              <div
+                title={`New: ${day.created}`}
+                className="w-[45%] max-w-[14px] bg-[var(--brand)]"
+                style={{ height: `${(day.created / maxVal) * 100}%`, minHeight: day.created ? 4 : 0 }}
+              />
+              <div
+                title={`Completed: ${day.completed}`}
+                className="w-[45%] max-w-[14px] bg-[var(--brand-deep)]"
+                style={{
+                  height: `${(day.completed / maxVal) * 100}%`,
+                  minHeight: day.completed ? 4 : 0,
+                }}
+              />
+            </div>
+            <p className="truncate text-[10px] text-[var(--muted)]">{day.label}</p>
+          </div>
+        ))}
+      </div>
+      <div className="mt-3 flex flex-wrap gap-4 text-xs text-[var(--muted)]">
+        <span className="flex items-center gap-2">
+          <span className="inline-block h-2.5 w-2.5 bg-[var(--brand)]" /> New requests
+        </span>
+        <span className="flex items-center gap-2">
+          <span className="inline-block h-2.5 w-2.5 bg-[var(--brand-deep)]" /> Completed
+        </span>
+      </div>
+    </div>
+  );
+}
+
 function AdminOverview() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [opsBusy, setOpsBusy] = useState(false);
 
   useEffect(() => {
     api
@@ -70,6 +115,58 @@ function AdminOverview() {
       .catch(() => toast.error("Could not load admin stats"))
       .finally(() => setLoading(false));
   }, []);
+
+  const downloadBackup = async () => {
+    setOpsBusy(true);
+    try {
+      const { data } = await api.get("/admin/backup", { responseType: "blob" });
+      const url = URL.createObjectURL(data);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `clinic-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("Clinic backup downloaded");
+    } catch {
+      toast.error("Backup failed");
+    } finally {
+      setOpsBusy(false);
+    }
+  };
+
+  const sendDigest = async () => {
+    setOpsBusy(true);
+    try {
+      const { data } = await api.post("/admin/digest/send");
+      toast.success(data.message || "Digest sent");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Could not send digest");
+    } finally {
+      setOpsBusy(false);
+    }
+  };
+
+  const uploadImage = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setOpsBusy(true);
+    try {
+      const form = new FormData();
+      form.append("image", file);
+      const { data } = await api.post("/admin/upload", form, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      if (data.url) {
+        await navigator.clipboard.writeText(data.url);
+        toast.success(`Uploaded — URL copied: ${data.url}`);
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Upload failed");
+    } finally {
+      setOpsBusy(false);
+    }
+  };
 
   if (loading) return <Loader />;
   if (!stats) return null;
@@ -82,17 +179,62 @@ function AdminOverview() {
     ["Approved", stats.approvedAppointments],
     ["Rejected", stats.rejectedAppointments || 0],
     ["Completed", stats.completedAppointments],
+    [
+      "Collected (Rs)",
+      Math.round(stats.paymentStats?.totalCollected || 0).toLocaleString(),
+    ],
+  ];
+
+  const payment = stats.paymentStats || {};
+  const paymentCards = [
+    ["Unpaid", payment.unpaid || 0],
+    ["Deposit due", payment.depositDue || 0],
+    ["Deposit paid", payment.depositPaid || 0],
+    ["Fully paid", payment.paid || 0],
   ];
 
   const serviceStats = stats.serviceStats || [];
+  const dailyTrend = stats.dailyTrend || [];
 
   return (
     <div className="space-y-10">
       <section>
-        <h2 className="font-display text-2xl font-semibold">Clinic overview</h2>
-        <p className="mt-1 text-sm text-[var(--muted)]">
-          Live counts across patients, doctors, and visits
-        </p>
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h2 className="font-display text-2xl font-semibold">Clinic overview</h2>
+            <p className="mt-1 text-sm text-[var(--muted)]">
+              Live counts across patients, doctors, visits, and payments
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              disabled={opsBusy}
+              onClick={downloadBackup}
+              className="border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm font-medium text-[var(--ink)] disabled:opacity-50"
+            >
+              Download backup
+            </button>
+            <button
+              type="button"
+              disabled={opsBusy}
+              onClick={sendDigest}
+              className="border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm font-medium text-[var(--ink)] disabled:opacity-50"
+            >
+              Send digest now
+            </button>
+            <label className="cursor-pointer border border-[var(--line)] bg-[var(--brand-deep)] px-3 py-2 text-sm font-medium text-white disabled:opacity-50">
+              Upload image
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                className="hidden"
+                disabled={opsBusy}
+                onChange={uploadImage}
+              />
+            </label>
+          </div>
+        </div>
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {cards.map(([label, value]) => (
             <div
@@ -101,6 +243,38 @@ function AdminOverview() {
             >
               <p className="text-sm text-[var(--muted)]">{label}</p>
               <p className="mt-2 font-display text-3xl font-semibold text-[var(--ink)]">
+                {value}
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="border border-[var(--line)] bg-[var(--surface)] p-5 md:p-7">
+        <h3 className="font-display text-xl font-semibold text-[var(--ink)]">
+          Last 14 days
+        </h3>
+        <p className="mt-1 text-sm text-[var(--muted)]">
+          New booking requests vs completed visits
+        </p>
+        <DailyTrendChart data={dailyTrend} />
+      </section>
+
+      <section>
+        <h3 className="font-display text-xl font-semibold text-[var(--ink)]">
+          Payments
+        </h3>
+        <p className="mt-1 text-sm text-[var(--muted)]">
+          Deposit and payment status across all appointments
+        </p>
+        <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {paymentCards.map(([label, value]) => (
+            <div
+              key={label}
+              className="border border-[var(--line)] bg-[var(--surface)] p-4"
+            >
+              <p className="text-xs text-[var(--muted)]">{label}</p>
+              <p className="mt-1 text-2xl font-semibold text-[var(--brand-deep)]">
                 {value}
               </p>
             </div>

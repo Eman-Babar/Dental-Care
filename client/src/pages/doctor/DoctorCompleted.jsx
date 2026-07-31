@@ -46,6 +46,12 @@ function DoctorCompleted() {
                 {item.service?.title} · {formatDate(item.appointmentDate)} ·{" "}
                 {item.appointmentTime}
               </p>
+              {item.notes ? (
+                <p className="mt-2 text-sm text-[var(--ink)]">
+                  <span className="text-[var(--muted)]">Notes: </span>
+                  {item.notes}
+                </p>
+              ) : null}
             </article>
           ))
         )}

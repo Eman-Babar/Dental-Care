@@ -1,4 +1,6 @@
 import { sendEmail } from "../config/nodemailer.js";
+import { buildBrandedEmail } from "./emailTemplates.js";
+import { getClientUrl } from "./brand.js";
 
 function visitSummary(appointment) {
   const when = `${new Date(appointment.appointmentDate).toLocaleDateString("en-GB", {
@@ -29,71 +31,72 @@ export async function notifyPatientStatusChange(appointment, status) {
     return { success: false, error: "Patient email missing" };
   }
 
-  let subject;
-  let text;
+  let title;
+  let intro;
+  let rows;
 
   switch (status) {
     case "APPROVED":
-      subject = "Your DentalCare appointment is confirmed";
-      text = [
-        `Hello ${patientName},`,
-        "",
-        "Good news — your appointment request has been approved.",
-        "",
-        `Service: ${service}`,
-        `Doctor: ${doctor}`,
-        `Date & time: ${when}`,
-        `Reason for visit: ${problem}`,
-        "",
-        "Please arrive a few minutes early. If you need to reschedule, contact the clinic.",
-        "",
-        "— DentalCare Clinic",
-      ].join("\n");
+      title = "Appointment confirmed";
+      intro = `Hello ${patientName}, good news — your appointment request has been approved. Please arrive a few minutes early.`;
+      rows = [
+        { label: "Service", value: service },
+        { label: "Doctor", value: doctor },
+        { label: "Date & time", value: when },
+        { label: "Reason", value: problem },
+      ];
       break;
 
     case "REJECTED":
-      subject = "Update on your DentalCare appointment request";
-      text = [
-        `Hello ${patientName},`,
-        "",
-        "We could not confirm your requested appointment at this time.",
-        "",
-        `Service: ${service}`,
-        `Requested: ${when}`,
-        appointment.rejectionReason
-          ? `Note: ${appointment.rejectionReason}`
-          : "Please contact the clinic or submit a new request with a different date.",
-        "",
-        "— DentalCare Clinic",
-      ].join("\n");
+      title = "Appointment update";
+      intro = `Hello ${patientName}, we could not confirm your requested appointment at this time.`;
+      rows = [
+        { label: "Service", value: service },
+        { label: "Requested", value: when },
+        {
+          label: "Note",
+          value:
+            appointment.rejectionReason ||
+            "Please contact the clinic or submit a new request with a different date.",
+        },
+      ];
       break;
 
     case "COMPLETED":
-      subject = "Thank you for visiting DentalCare";
-      text = [
-        `Hello ${patientName},`,
-        "",
-        "Your recent appointment has been marked as completed.",
-        "",
-        `Service: ${service}`,
-        `Doctor: ${doctor}`,
-        `Visit: ${when}`,
-        "",
-        "We hope to see you again. Leave a review from your patient dashboard if you would like.",
-        "",
-        "— DentalCare Clinic",
-      ].join("\n");
+      title = "Thanks for visiting";
+      intro = `Hello ${patientName}, your recent appointment has been marked as completed. We hope to see you again — and we'd love a short review when you have a moment.`;
+      rows = [
+        { label: "Service", value: service },
+        { label: "Doctor", value: doctor },
+        { label: "Visit", value: when },
+      ];
       break;
 
     default:
       return { success: false, error: `No patient email for status: ${status}` };
   }
 
+  const reviewUrl =
+    status === "COMPLETED"
+      ? `${getClientUrl()}/patient/reviews`
+      : `${getClientUrl()}/login`;
+
+  const { brand, html, text } = await buildBrandedEmail({
+    title,
+    intro,
+    rows,
+    cta: {
+      label: status === "COMPLETED" ? "Leave a review" : "Open patient portal",
+      url: reviewUrl,
+    },
+    footerNote: `Questions? Reply to this email or contact ${brand}.`,
+  });
+
   const result = await sendEmail({
     to: patientEmail,
-    subject,
+    subject: `${title} — ${brand}`,
     text,
-    html: `<pre style="font-family:sans-serif;white-space:pre-wrap;line-height:1.5">${text}</pre>`,
+    html,
   });
 
   if (!result.success) {
@@ -117,30 +120,103 @@ export async function notifyClinicNewRequest(appointment) {
   }
 
   const when = `${new Date(appointment.appointmentDate).toLocaleDateString("en-GB")} at ${appointment.appointmentTime}`;
-  const subject = `New appointment request #${appointment.id}`;
-  const text = [
-    "A new appointment request was submitted on DentalCare.",
-    "",
-    `Patient: ${appointment.patient?.name || "—"}`,
-    `Email: ${appointment.patient?.email || "—"}`,
-    `Phone: ${appointment.patient?.phone || "—"}`,
-    `Service: ${appointment.service?.title || "—"}`,
-    `Doctor: ${appointment.doctor?.name || "Unassigned"}`,
-    `When: ${when}`,
-    `Problem: ${appointment.currentProblem}`,
-    `Status: ${appointment.status}`,
-    `Submitted: ${new Date(appointment.createdAt).toLocaleString()}`,
-  ].join("\n");
+
+  const { brand, html, text } = await buildBrandedEmail({
+    title: `New appointment request #${appointment.id}`,
+    intro: "A new appointment request was submitted on the website.",
+    rows: [
+      { label: "Patient", value: appointment.patient?.name || "—" },
+      { label: "Email", value: appointment.patient?.email || "—" },
+      { label: "Phone", value: appointment.patient?.phone || "—" },
+      { label: "Service", value: appointment.service?.title || "—" },
+      { label: "Doctor", value: appointment.doctor?.name || "Unassigned" },
+      { label: "When", value: when },
+      { label: "Problem", value: appointment.currentProblem || "—" },
+      { label: "Status", value: appointment.status },
+      {
+        label: "Submitted",
+        value: new Date(appointment.createdAt).toLocaleString(),
+      },
+    ],
+    cta: {
+      label: "Open admin appointments",
+      url: `${getClientUrl()}/admin/appointments`,
+    },
+  });
 
   const result = await sendEmail({
     to: clinicEmail,
-    subject,
+    subject: `New appointment request #${appointment.id} — ${brand}`,
     text,
-    html: `<pre style="font-family:sans-serif;white-space:pre-wrap">${text}</pre>`,
+    html,
   });
 
   if (!result.success) {
     console.error("Clinic notification failed:", result.error);
+  }
+  return result;
+}
+
+function clinicInbox() {
+  return (
+    process.env.CLINIC_EMAIL ||
+    process.env.EMAIL_FROM?.match(/<([^>]+)>/)?.[1] ||
+    process.env.EMAIL_USER ||
+    null
+  );
+}
+
+/**
+ * Notify clinic when a patient cancels or reschedules.
+ */
+export async function notifyClinicPatientChange(appointment, kind) {
+  const clinicEmail = clinicInbox();
+  if (!clinicEmail) {
+    return { success: false, error: "CLINIC_EMAIL not set" };
+  }
+
+  const when = `${new Date(appointment.appointmentDate).toLocaleDateString("en-GB")} at ${appointment.appointmentTime}`;
+  const isCancel = kind === "CANCELLED";
+  const title = isCancel
+    ? `Patient cancelled #${appointment.id}`
+    : `Patient rescheduled #${appointment.id}`;
+  const intro = isCancel
+    ? "A patient cancelled an upcoming appointment."
+    : "A patient requested a new date/time — review and confirm in admin.";
+
+  const rows = [
+    { label: "Patient", value: appointment.patient?.name || "—" },
+    { label: "Email", value: appointment.patient?.email || "—" },
+    { label: "Phone", value: appointment.patient?.phone || "—" },
+    { label: "Service", value: appointment.service?.title || "—" },
+    { label: "Doctor", value: appointment.doctor?.name || "Unassigned" },
+    { label: "When", value: when },
+    { label: "Status", value: appointment.status },
+  ];
+
+  if (isCancel && appointment.cancellationReason) {
+    rows.push({ label: "Reason", value: appointment.cancellationReason });
+  }
+
+  const { brand, html, text } = await buildBrandedEmail({
+    title,
+    intro,
+    rows,
+    cta: {
+      label: "Open admin appointments",
+      url: `${getClientUrl()}/admin/appointments`,
+    },
+  });
+
+  const result = await sendEmail({
+    to: clinicEmail,
+    subject: `${title} — ${brand}`,
+    text,
+    html,
+  });
+
+  if (!result.success) {
+    console.error(`Clinic ${kind} notify failed:`, result.error);
   }
   return result;
 }

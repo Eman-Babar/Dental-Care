@@ -1,5 +1,6 @@
 import express from "express";
 import { protect, restrictTo } from "../middlewares/auth.js";
+import upload from "../config/multer.js";
 import {
     adminDashboard,
     assignDoctor,
@@ -14,6 +15,12 @@ import {
     getPatientById,
     deletePatient,
     getAllReviews,
+    setReviewVisibility,
+    exportAppointmentsCsv,
+    exportClinicBackup,
+    uploadSiteImage,
+    sendDigestNow,
+    getAdminAlerts,
     getAuditLogs,
 } from "../controllers/adminController.js";
 const router = express.Router();
@@ -35,11 +42,48 @@ router.put(
     restrictTo("ADMIN"),
     updatePatient
 );
+router.put(
+  "/reviews/:id/visibility",
+  protect,
+  restrictTo("ADMIN"),
+  setReviewVisibility
+);
 router.get(
   "/doctors",
   protect,
   restrictTo("ADMIN"),
   getAllDoctors
+);
+router.get(
+  "/appointments/export",
+  protect,
+  restrictTo("ADMIN"),
+  exportAppointmentsCsv
+);
+router.get(
+  "/backup",
+  protect,
+  restrictTo("ADMIN"),
+  exportClinicBackup
+);
+router.post(
+  "/upload",
+  protect,
+  restrictTo("ADMIN"),
+  upload.single("image"),
+  uploadSiteImage
+);
+router.post(
+  "/digest/send",
+  protect,
+  restrictTo("ADMIN"),
+  sendDigestNow
+);
+router.get(
+  "/alerts",
+  protect,
+  restrictTo("ADMIN"),
+  getAdminAlerts
 );
 router.get(
   "/appointments",

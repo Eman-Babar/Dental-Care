@@ -12,9 +12,28 @@ import {
   notifyClinicNewRequest,
   notifyPatientStatusChange,
 } from '../utils/appointmentEmails.js';
+import { sendPasswordSetupEmail } from '../utils/passwordReset.js';
+import {
+  sendAppointmentReminder,
+  suggestDeposit,
+  buildWhatsAppReminderUrl,
+} from '../utils/appointmentReminders.js';
+import { getMaintenanceState } from '../utils/maintenance.js';
 
 const CLINIC_OPEN_HOUR = 9; // 9:00 AM
 const CLINIC_CLOSE_HOUR = 17; // 5:00 PM
+
+async function rejectIfMaintenance(res) {
+  const maintenance = await getMaintenanceState();
+  if (maintenance.enabled) {
+    res.status(503).json({
+      message: maintenance.message,
+      maintenance: true,
+    });
+    return true;
+  }
+  return false;
+}
 
 async function notifyClinicInbox(appointment) {
   return notifyClinicNewRequest(appointment);
@@ -56,7 +75,13 @@ async function findOrCreateGuestPatient({ name, email, phone }) {
       role: "PATIENT",
     },
   });
-  return { patient };
+
+  // Let guest set a real password and sign into the patient portal
+  sendPasswordSetupEmail(patient, "welcome").catch((err) =>
+    console.error("Welcome / set-password email failed:", err)
+  );
+
+  return { patient, isNew: true };
 }
 
 // @desc    Public appointment request (no login required)
@@ -64,6 +89,8 @@ async function findOrCreateGuestPatient({ name, email, phone }) {
 // @access  Public
 export const createPublicAppointment = async (req, res) => {
   try {
+    if (await rejectIfMaintenance(res)) return;
+
     const {
       name,
       email,
@@ -184,6 +211,9 @@ export const createPublicAppointment = async (req, res) => {
         currentProblem: String(currentProblem).trim(),
         notes: notes ? String(notes).trim() : null,
         status: "PENDING",
+        paymentStatus: service.price != null ? "DEPOSIT_DUE" : "UNPAID",
+        depositAmount: suggestDeposit(service.price),
+        amountPaid: 0,
       },
       include: {
         patient: {
@@ -211,10 +241,13 @@ export const createPublicAppointment = async (req, res) => {
       console.error("Clinic email notification failed:", err)
     );
 
+    const message = guest.isNew
+      ? "Appointment request received. Check your email to set a patient portal password. The clinic will confirm shortly."
+      : "Appointment request received. The clinic will confirm shortly.";
+
     return res.status(201).json({
       success: true,
-      message:
-        "Appointment request received. The clinic will confirm shortly.",
+      message,
       appointment,
     });
   } catch (error) {
@@ -229,6 +262,7 @@ export const createPublicAppointment = async (req, res) => {
 
 export const createAppointment = async (req, res) => {
   try {
+    if (await rejectIfMaintenance(res)) return;
     const {
       serviceId,
       doctorId,
@@ -359,6 +393,9 @@ export const createAppointment = async (req, res) => {
         medicalHistory: medicalHistory || null,
         notes: notes || null,
         status: "PENDING",
+        paymentStatus: service.price != null ? "DEPOSIT_DUE" : "UNPAID",
+        depositAmount: suggestDeposit(service.price),
+        amountPaid: 0,
       },
       include: {
         patient: {
@@ -530,6 +567,16 @@ export const updateAppointmentStatus = async (req, res) => {
     if (normalized === "REJECTED" && rejectionReason) {
       data.rejectionReason = String(rejectionReason);
     }
+    // When confirming, suggest a deposit if service is priced and still unpaid
+    if (
+      normalized === "APPROVED" &&
+      appointment.paymentStatus === "UNPAID" &&
+      appointment.service?.price != null
+    ) {
+      data.paymentStatus = "DEPOSIT_DUE";
+      data.depositAmount =
+        appointment.depositAmount ?? suggestDeposit(appointment.service.price);
+    }
 
     const updatedAppointment = await prisma.appointment.update({
       where: { id: parseInt(id, 10) },
@@ -596,5 +643,162 @@ export const deleteAppointment = async (req, res) => {
   } catch (error) {
     console.error('Delete appointment error:', error);
     return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+const PAYMENT_STATUSES = [
+  "UNPAID",
+  "DEPOSIT_DUE",
+  "DEPOSIT_PAID",
+  "PAID",
+  "WAIVED",
+];
+
+// @desc    Update payment / deposit status
+// @route   PUT /api/appointments/:id/payment
+// @access  Private (ADMIN)
+export const updateAppointmentPayment = async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const { paymentStatus, depositAmount, amountPaid } = req.body;
+
+    const normalized = String(paymentStatus || "").toUpperCase();
+    if (!PAYMENT_STATUSES.includes(normalized)) {
+      return res.status(400).json({
+        message: `Invalid paymentStatus. Use: ${PAYMENT_STATUSES.join(", ")}`,
+      });
+    }
+
+    const existing = await prisma.appointment.findUnique({ where: { id } });
+    if (!existing) {
+      return res.status(404).json({ message: "Appointment not found" });
+    }
+
+    const data = { paymentStatus: normalized };
+    if (depositAmount !== undefined && depositAmount !== null && depositAmount !== "") {
+      data.depositAmount = Number(depositAmount);
+    }
+    if (amountPaid !== undefined && amountPaid !== null && amountPaid !== "") {
+      data.amountPaid = Number(amountPaid);
+    } else if (normalized === "DEPOSIT_PAID" && existing.depositAmount != null) {
+      data.amountPaid = existing.depositAmount;
+    } else if (normalized === "PAID" && existing.serviceId) {
+      const service = await prisma.service.findUnique({
+        where: { id: existing.serviceId },
+      });
+      if (service?.price != null) data.amountPaid = service.price;
+    } else if (normalized === "UNPAID" || normalized === "WAIVED") {
+      data.amountPaid = 0;
+    }
+
+    const appointment = await prisma.appointment.update({
+      where: { id },
+      data,
+      include: {
+        patient: {
+          select: { id: true, name: true, email: true, phone: true },
+        },
+        doctor: { select: { id: true, name: true, email: true } },
+        service: true,
+      },
+    });
+
+    await writeAuditLog({
+      actorId: req.user?.id,
+      actorRole: req.user?.role,
+      action: "APPOINTMENT_PAYMENT_UPDATED",
+      entity: "Appointment",
+      entityId: id,
+      details: `Payment ${normalized}`,
+    });
+
+    return res.json({
+      success: true,
+      message: "Payment status updated.",
+      appointment,
+    });
+  } catch (error) {
+    console.error("Update payment error:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// @desc    Send reminder email (+ WhatsApp deep link)
+// @route   POST /api/appointments/:id/remind
+// @access  Private (ADMIN)
+export const remindAppointment = async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const appointment = await prisma.appointment.findUnique({
+      where: { id },
+      include: {
+        patient: {
+          select: { id: true, name: true, email: true, phone: true },
+        },
+        doctor: { select: { id: true, name: true } },
+        service: true,
+      },
+    });
+
+    if (!appointment) {
+      return res.status(404).json({ message: "Appointment not found" });
+    }
+
+    if (!["APPROVED", "PENDING"].includes(appointment.status)) {
+      return res.status(400).json({
+        message: "Reminders are only for pending or approved visits.",
+      });
+    }
+
+    const result = await sendAppointmentReminder(appointment);
+
+    const whatsappRow = await prisma.siteContent.findUnique({
+      where: { key: "contact.whatsapp" },
+    });
+    // Prefer patient phone for personal WhatsApp; fallback clinic number as broadcast prep
+    const patientDigits = String(appointment.patient?.phone || "").replace(
+      /\D/g,
+      ""
+    );
+    const clinicDigits = whatsappRow?.value || "";
+    const waTarget =
+      patientDigits.length >= 10
+        ? patientDigits.startsWith("92")
+          ? patientDigits
+          : `92${patientDigits.replace(/^0/, "")}`
+        : clinicDigits;
+
+    const whatsappUrl = buildWhatsAppReminderUrl(appointment, waTarget);
+
+    if (!result.success) {
+      return res.status(502).json({
+        message:
+          result.error ||
+          "Could not send email reminder. You can still use WhatsApp.",
+        whatsappUrl,
+      });
+    }
+
+    await writeAuditLog({
+      actorId: req.user?.id,
+      actorRole: req.user?.role,
+      action: "APPOINTMENT_REMINDER_SENT",
+      entity: "Appointment",
+      entityId: id,
+      details: "Reminder email sent",
+    });
+
+    return res.json({
+      success: true,
+      message: "Reminder email sent.",
+      whatsappUrl,
+      appointment: {
+        ...appointment,
+        reminderSentAt: new Date(),
+      },
+    });
+  } catch (error) {
+    console.error("Remind appointment error:", error);
+    return res.status(500).json({ message: "Internal server error" });
   }
 };

@@ -2,13 +2,18 @@ import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
-import DoctorRegister from "./pages/DoctorRegister";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import Services from "./pages/Services";
 import About from "./pages/About";
 import Navbar from "./components/layout/Navbar";
 import Appointment from "./pages/Appointment";
 import Doctors from "./pages/Doctors";
 import Contact from "./pages/Contact";
+import Faq from "./pages/Faq";
+import ServiceDetail from "./pages/ServiceDetail";
+import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
 import ProtectedRoute from "./components/common/ProtectedRoute";
 import PatientLayout from "./pages/patient/PatientLayout";
 import PatientAppointments from "./pages/patient/PatientAppointments";
@@ -33,11 +38,25 @@ import AdminReviews from "./pages/admin/AdminReviews";
 import AdminServices from "./pages/admin/AdminServices";
 import AdminAuditLogs from "./pages/admin/AdminAuditLogs";
 import AdminContent from "./pages/admin/AdminContent";
+import Receipt from "./pages/Receipt";
+import PaymentSuccess from "./pages/PaymentSuccess";
 import { useAuth } from "./context/AuthContext";
 import { dashboardPathForRole } from "./utils/storage";
 import Loader from "./components/common/Loader";
+import ChatBot from "./components/common/ChatBot";
+import MaintenanceBanner from "./components/common/MaintenanceBanner";
 
-const HIDE_NAV = ["/login", "/register", "/register-doctor", "/patient", "/doctor", "/admin"];
+const HIDE_NAV = [
+  "/login",
+  "/register",
+  "/forgot-password",
+  "/reset-password",
+  "/patient",
+  "/doctor",
+  "/admin",
+  "/receipt",
+  "/payment",
+];
 
 function App() {
   const location = useLocation();
@@ -51,8 +70,9 @@ function App() {
   if (
     loading &&
     (location.pathname === "/register" ||
-      location.pathname === "/register-doctor" ||
-      location.pathname === "/login")
+      location.pathname === "/login" ||
+      location.pathname === "/forgot-password" ||
+      location.pathname === "/reset-password")
   ) {
     return (
       <div className="page-shell flex min-h-screen items-center justify-center">
@@ -63,6 +83,7 @@ function App() {
 
   return (
     <>
+      {!hideNavbar && <MaintenanceBanner />}
       {!hideNavbar && <Navbar />}
 
       <Routes>
@@ -78,13 +99,35 @@ function App() {
         />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        <Route path="/register-doctor" element={<DoctorRegister />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/register-doctor" element={<Navigate to="/login" replace />} />
         <Route path="/home" element={<Home />} />
         <Route path="/about" element={<About />} />
         <Route path="/services" element={<Services />} />
+        <Route path="/services/:id" element={<ServiceDetail />} />
         <Route path="/appointment" element={<Appointment />} />
         <Route path="/doctors" element={<Doctors />} />
+        <Route path="/faq" element={<Faq />} />
         <Route path="/contact" element={<Contact />} />
+        <Route path="/privacy" element={<Privacy />} />
+        <Route path="/terms" element={<Terms />} />
+        <Route
+          path="/receipt/:id"
+          element={
+            <ProtectedRoute roles={["PATIENT", "ADMIN"]}>
+              <Receipt />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/payment/success"
+          element={
+            <ProtectedRoute roles={["PATIENT", "ADMIN"]}>
+              <PaymentSuccess />
+            </ProtectedRoute>
+          }
+        />
 
         <Route
           path="/patient"
@@ -141,6 +184,7 @@ function App() {
         <Route path="/admin-dashboard" element={<Navigate to="/admin" replace />} />
         <Route path="/patient/dashboard" element={<Navigate to="/patient" replace />} />
       </Routes>
+      {!hideNavbar && <ChatBot />}
     </>
   );
 }

@@ -6,6 +6,8 @@ import {
   getAppointmentById,
   getMyAppointments,
   updateAppointmentStatus,
+  updateAppointmentPayment,
+  remindAppointment,
   deleteAppointment,
 } from '../controllers/appointmentController.js';
 import { protect, restrictTo } from '../middlewares/auth.js';
@@ -26,6 +28,8 @@ router.get('/mine', protect, getMyAppointments);
 router.get('/', protect, restrictTo('ADMIN', 'DOCTOR'), getAllAppointments);
 router.get('/:id', protect, getAppointmentById);
 router.put('/:id/status', protect, restrictTo('ADMIN', 'DOCTOR'), updateAppointmentStatus);
+router.put('/:id/payment', protect, restrictTo('ADMIN'), updateAppointmentPayment);
+router.post('/:id/remind', protect, restrictTo('ADMIN'), remindAppointment);
 router.delete('/:id', protect, restrictTo('ADMIN'), deleteAppointment);
 
 export default router;

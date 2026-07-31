@@ -5,6 +5,7 @@ import api from "../../api/axios";
 import { isDentalProblem } from "../../utils/dentalProblem";
 import { groupSlots } from "../../utils/doctorAvailability";
 import { getDoctorServices } from "../../utils/doctorServices";
+import { useSiteContent } from "../../hooks/useSiteContent";
 
 const empty = {
   serviceId: "",
@@ -33,6 +34,14 @@ function isPastDateTime(dateStr, timeStr) {
 
 function PatientBook() {
   const navigate = useNavigate();
+  const { get } = useSiteContent();
+  const maintenanceOn = ["true", "1", "yes", "on"].includes(
+    String(get("site.maintenance", "false")).trim().toLowerCase()
+  );
+  const maintenanceMsg = get(
+    "site.maintenance_message",
+    "Online booking is temporarily paused. Please contact the clinic."
+  );
   const [allServices, setAllServices] = useState([]);
   const [doctors, setDoctors] = useState([]);
   const [form, setForm] = useState(empty);
@@ -172,6 +181,12 @@ function PatientBook() {
         doctor&apos;s profile.
       </p>
 
+      {maintenanceOn ? (
+        <div className="mt-6 border border-[var(--line)] bg-[var(--surface)] p-5">
+          <p className="font-semibold text-[var(--ink)]">Booking paused</p>
+          <p className="mt-2 text-sm text-[var(--muted)]">{maintenanceMsg}</p>
+        </div>
+      ) : (
       <form
         onSubmit={handleSubmit}
         className="mt-6 space-y-4 border border-[var(--line)] bg-[var(--surface)] p-4 sm:mt-8 sm:p-6"
@@ -356,6 +371,7 @@ function PatientBook() {
           {loading ? "Submitting..." : "Submit for doctor review"}
         </button>
       </form>
+      )}
     </div>
   );
 }

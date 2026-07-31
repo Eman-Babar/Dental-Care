@@ -1,6 +1,7 @@
 import prisma from "../config/prisma.js";
 import { writeAuditLog } from "../utils/auditLog.js";
 import { validateAppointmentSlot } from "../utils/appointmentValidation.js";
+import { notifyClinicPatientChange } from "../utils/appointmentEmails.js";
 // @desc Patient Dashboard
 // @route GET /api/patient/dashboard
 // @access Private (PATIENT)
@@ -232,6 +233,7 @@ export const cancelMyAppointment = async (req, res) => {
         cancellationReason: cancellationReason.trim(),
       },
       include: {
+        patient: { select: { id: true, name: true, email: true, phone: true } },
         doctor: { select: { id: true, name: true, email: true } },
         service: true,
       },
@@ -245,6 +247,10 @@ export const cancelMyAppointment = async (req, res) => {
       entityId: updated.id,
       details: `Patient cancelled: ${updated.service?.title || "appointment"}`,
     });
+
+    notifyClinicPatientChange(updated, "CANCELLED").catch((err) =>
+      console.error("Cancel notify failed:", err.message || err)
+    );
 
     return res.json({
       success: true,
@@ -303,6 +309,7 @@ export const rescheduleMyAppointment = async (req, res) => {
         cancellationReason: null,
       },
       include: {
+        patient: { select: { id: true, name: true, email: true, phone: true } },
         doctor: {
           include: { doctorProfile: true },
         },
@@ -318,6 +325,10 @@ export const rescheduleMyAppointment = async (req, res) => {
       entityId: updated.id,
       details: `Rescheduled to ${appointmentDate} ${appointmentTime}`,
     });
+
+    notifyClinicPatientChange(updated, "RESCHEDULED").catch((err) =>
+      console.error("Reschedule notify failed:", err.message || err)
+    );
 
     return res.json({
       success: true,

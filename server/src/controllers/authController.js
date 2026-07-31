@@ -1,16 +1,11 @@
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
 import prisma from '../config/prisma.js';
 import { writeAuditLog } from '../utils/auditLog.js';
+import { signAuthToken } from '../utils/jwt.js';
+import { sendPasswordSetupEmail } from '../utils/passwordReset.js';
 
 // JWT generator utility
-const generateToken = (id, role) => {
-  return jwt.sign(
-    { id, role },
-    process.env.JWT_SECRET || 'dental_clinic_jwt_secret_key_change_me_in_production_12345',
-    { expiresIn: '30d' }
-  );
-};
+const generateToken = (id, role) => signAuthToken(id, role);
 
 // @desc    Register a new user
 // @route   POST /api/auth/register
@@ -78,84 +73,14 @@ export const register = async (req, res) => {
   }
 };
 
-// @desc    Register a new doctor
+// @desc    Public doctor self-registration is disabled (admin creates doctors)
 // @route   POST /api/auth/register-doctor
-// @access  Public
-export const registerDoctor = async (req, res) => {
-  const {
-    name,
-    email,
-    password,
-    phone,
-    specialization,
-    qualification,
-    experience,
-    bio,
-    workingDays,
-    workingHours,
-  } = req.body;
-
-  try {
-    if (!name || !email || !password || !specialization) {
-      return res.status(400).json({
-        message: 'Name, email, password, and specialization are required',
-      });
-    }
-
-    const userExists = await prisma.user.findUnique({ where: { email } });
-    if (userExists) {
-      return res.status(400).json({ message: 'User with this email already exists' });
-    }
-
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    const user = await prisma.user.create({
-      data: {
-        name,
-        email,
-        phone: phone || null,
-        password: hashedPassword,
-        role: 'DOCTOR',
-        doctorProfile: {
-          create: {
-            specialization,
-            qualification: qualification || null,
-            experience: experience ? Number(experience) : null,
-            bio: bio || null,
-            workingDays: workingDays || null,
-            workingHours: workingHours || null,
-          },
-        },
-      },
-      include: {
-        doctorProfile: true,
-      },
-    });
-
-    const token = generateToken(user.id, user.role);
-
-    return res.status(201).json({
-      message: 'Doctor registration successful',
-      token,
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        phone: user.phone,
-        role: user.role,
-        doctorProfile: user.doctorProfile,
-      },
-    });
-  } catch (error) {
-    console.error('Doctor registration error:', error);
-    if (error?.name === 'PrismaClientInitializationError') {
-      return res.status(503).json({
-        message: 'Database is unavailable. Check DATABASE_URL / Neon connection.',
-      });
-    }
-    return res.status(500).json({ message: 'Internal server error' });
-  }
+// @access  Disabled
+export const registerDoctor = async (_req, res) => {
+  return res.status(403).json({
+    message:
+      "Doctor accounts can only be created by the clinic admin. Please contact the clinic.",
+  });
 };
 
 // @desc    Authenticate user & get token
@@ -306,6 +231,108 @@ export const changePassword = async (req, res) => {
     return res.json({ message: "Password updated successfully" });
   } catch (error) {
     console.error("Change password error:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// @desc    Request password reset email
+// @route   POST /api/auth/forgot-password
+// @access  Public
+export const forgotPassword = async (req, res) => {
+  try {
+    const email = String(req.body.email || "")
+      .trim()
+      .toLowerCase();
+
+    if (!email) {
+      return res.status(400).json({ message: "Email is required" });
+    }
+
+    const user = await prisma.user.findUnique({ where: { email } });
+
+    // Always return success to avoid email enumeration
+    if (user) {
+      await sendPasswordSetupEmail(user, "reset");
+      await writeAuditLog({
+        actorId: user.id,
+        actorRole: user.role,
+        actorEmail: user.email,
+        action: "PASSWORD_RESET_REQUESTED",
+        entity: "User",
+        entityId: user.id,
+        details: "Password reset email requested",
+      });
+    }
+
+    return res.json({
+      message:
+        "If that email is registered, we sent a password reset link. Check your inbox.",
+    });
+  } catch (error) {
+    console.error("Forgot password error:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// @desc    Reset password with token from email
+// @route   POST /api/auth/reset-password
+// @access  Public
+export const resetPassword = async (req, res) => {
+  try {
+    const { token, password } = req.body;
+
+    if (!token || !password) {
+      return res.status(400).json({
+        message: "Token and new password are required",
+      });
+    }
+
+    if (String(password).length < 6) {
+      return res.status(400).json({
+        message: "Password must be at least 6 characters",
+      });
+    }
+
+    const user = await prisma.user.findFirst({
+      where: {
+        resetPasswordToken: String(token),
+        resetPasswordExpires: { gt: new Date() },
+      },
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        message: "This reset link is invalid or has expired. Request a new one.",
+      });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(String(password), salt);
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        password: hashedPassword,
+        resetPasswordToken: null,
+        resetPasswordExpires: null,
+      },
+    });
+
+    await writeAuditLog({
+      actorId: user.id,
+      actorRole: user.role,
+      actorEmail: user.email,
+      action: "PASSWORD_RESET_COMPLETED",
+      entity: "User",
+      entityId: user.id,
+      details: "Password reset via email link",
+    });
+
+    return res.json({
+      message: "Password updated. You can sign in now.",
+    });
+  } catch (error) {
+    console.error("Reset password error:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 };

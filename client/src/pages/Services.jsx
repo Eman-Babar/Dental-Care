@@ -81,12 +81,27 @@ function Services() {
                   <p className="mt-3 flex-1 text-sm leading-relaxed text-[var(--muted)]">
                     {description}
                   </p>
-                  <Link
-                    to="/appointment"
-                    className="btn-primary mt-6 self-start !px-4 !py-2.5 text-sm"
-                  >
-                    Book this care
-                  </Link>
+                  {(service.duration || service.price != null) && (
+                    <p className="mt-3 text-xs font-medium text-[var(--brand)]">
+                      {service.duration ? `${service.duration} min` : null}
+                      {service.duration && service.price != null ? " · " : null}
+                      {service.price != null ? `From Rs ${service.price}` : null}
+                    </p>
+                  )}
+                  <div className="mt-6 flex flex-wrap gap-2">
+                    <Link
+                      to={`/services/${service.id}`}
+                      className="btn-secondary !px-4 !py-2.5 text-sm"
+                    >
+                      Learn more
+                    </Link>
+                    <Link
+                      to="/appointment"
+                      className="btn-primary !px-4 !py-2.5 text-sm"
+                    >
+                      Book
+                    </Link>
+                  </div>
                 </motion.article>
               );
             })}

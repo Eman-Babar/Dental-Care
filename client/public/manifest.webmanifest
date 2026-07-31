@@ -1,0 +1,25 @@
+{
+  "name": "DentalCare",
+  "short_name": "DentalCare",
+  "description": "Book dental appointments, manage visits, and stay in touch with your clinic.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#f3f8f7",
+  "theme_color": "#0a6b6b",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

@@ -22,6 +22,14 @@ enum AppointmentStatus {
   CANCELLED
 }
 
+enum PaymentStatus {
+  UNPAID
+  DEPOSIT_DUE
+  DEPOSIT_PAID
+  PAID
+  WAIVED
+}
+
 model User {
   id          Int      @id @default(autoincrement())
   name        String
@@ -32,6 +40,9 @@ model User {
 
   phone       String?
   image       String?
+
+  resetPasswordToken   String?
+  resetPasswordExpires DateTime?
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -129,6 +140,16 @@ model Appointment {
 
   status            AppointmentStatus @default(PENDING)
 
+  paymentStatus     PaymentStatus @default(UNPAID)
+  depositAmount     Float?
+  amountPaid        Float?    @default(0)
+
+  paymentNote       String?
+  paymentClaimedAt  DateTime?
+  stripeSessionId   String?
+
+  reminderSentAt    DateTime?
+
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
@@ -151,6 +172,9 @@ model Review {
 
   rating         Int
   comment        String
+
+  /// Admin moderation — only published reviews appear on the public site
+  isPublished    Boolean  @default(true)
 
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt

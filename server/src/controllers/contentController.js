@@ -1,14 +1,35 @@
 import prisma from "../config/prisma.js";
 import { DEFAULT_SITE_CONTENT } from "../utils/defaultSiteContent.js";
 
+let ensurePromise = null;
+
+/**
+ * Seed missing CMS keys once (shared across concurrent requests).
+ * Avoids N sequential upserts on every page load — that was hanging Neon.
+ */
 export async function ensureDefaultContent() {
-  for (const item of DEFAULT_SITE_CONTENT) {
-    await prisma.siteContent.upsert({
-      where: { key: item.key },
-      update: {},
-      create: item,
+  if (!ensurePromise) {
+    ensurePromise = (async () => {
+      const existing = await prisma.siteContent.findMany({
+        select: { key: true },
+      });
+      const have = new Set(existing.map((row) => row.key));
+      const missing = DEFAULT_SITE_CONTENT.filter((item) => !have.has(item.key));
+
+      if (missing.length > 0) {
+        await prisma.siteContent.createMany({
+          data: missing,
+          skipDuplicates: true,
+        });
+      }
+    })().catch((err) => {
+      // Allow retry on next request if this run failed
+      ensurePromise = null;
+      throw err;
     });
   }
+
+  return ensurePromise;
 }
 
 export const getPublicContent = async (req, res) => {
@@ -82,21 +103,24 @@ export const bulkUpdateContent = async (req, res) => {
       return res.status(400).json({ message: "items array is required." });
     }
 
-    const updated = [];
-    for (const entry of items) {
-      if (!entry?.key || entry.value === undefined) continue;
-      const item = await prisma.siteContent.upsert({
-        where: { key: entry.key },
-        update: { value: String(entry.value) },
-        create: {
-          key: entry.key,
-          label: entry.label || entry.key,
-          value: String(entry.value),
-          group: entry.key.includes(".") ? entry.key.split(".")[0] : "general",
-        },
-      });
-      updated.push(item);
-    }
+    const updated = await prisma.$transaction(
+      items
+        .filter((entry) => entry?.key && entry.value !== undefined)
+        .map((entry) =>
+          prisma.siteContent.upsert({
+            where: { key: entry.key },
+            update: { value: String(entry.value) },
+            create: {
+              key: entry.key,
+              label: entry.label || entry.key,
+              value: String(entry.value),
+              group: entry.key.includes(".")
+                ? entry.key.split(".")[0]
+                : "general",
+            },
+          })
+        )
+    );
 
     return res.json({
       success: true,

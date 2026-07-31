@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { Mail, MapPin, Phone } from "lucide-react";
+import { FaFacebookF, FaInstagram, FaWhatsapp } from "react-icons/fa";
 import { useSiteContent } from "../../hooks/useSiteContent";
 
 function Footer() {
@@ -9,25 +10,69 @@ function Footer() {
   const email = get("contact.email", "hello@dentalcare.com");
   const hours = get("contact.hours", "Mon – Sat · 9:00 AM – 5:00 PM");
   const brand = get("home.brand", "DentalCare");
+  const whatsapp = get("contact.whatsapp", "923001234567");
 
   return (
     <footer className="bg-[var(--brand-deep)] text-white">
-      <div className="mx-auto grid max-w-6xl gap-12 px-5 py-14 md:grid-cols-3">
-        <div>
+      <div className="mx-auto grid max-w-6xl gap-12 px-5 py-14 md:grid-cols-4">
+        <div className="md:col-span-1">
           <p className="font-display text-3xl font-semibold">{brand}</p>
           <p className="mt-4 max-w-xs text-sm leading-relaxed text-white/70">
-            A neighborhood dental clinic focused on gentle treatment, clear
-            communication, and healthy smiles for life.
+            {get(
+              "brand.tagline",
+              "A neighbourhood dental clinic focused on gentle treatment, clear communication, and healthy smiles for life."
+            )}
           </p>
-          <nav className="mt-5 flex flex-wrap gap-x-4 gap-y-2 text-sm text-white/75">
+          <div className="mt-5 flex gap-3">
+            <a
+              href={`https://wa.me/${whatsapp}`}
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-lg border border-white/20 p-2 text-white/80 hover:bg-white/10 hover:text-white"
+              aria-label="WhatsApp"
+            >
+              <FaWhatsapp size={16} />
+            </a>
+            <a
+              href="https://facebook.com"
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-lg border border-white/20 p-2 text-white/80 hover:bg-white/10 hover:text-white"
+              aria-label="Facebook"
+            >
+              <FaFacebookF size={16} />
+            </a>
+            <a
+              href="https://instagram.com"
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-lg border border-white/20 p-2 text-white/80 hover:bg-white/10 hover:text-white"
+              aria-label="Instagram"
+            >
+              <FaInstagram size={16} />
+            </a>
+          </div>
+        </div>
+
+        <div>
+          <h3 className="text-sm font-semibold uppercase tracking-wider text-white/50">
+            Explore
+          </h3>
+          <nav className="mt-4 flex flex-col gap-2 text-sm text-white/80">
             <Link to="/about" className="hover:text-white">
               About
             </Link>
             <Link to="/services" className="hover:text-white">
               Services
             </Link>
-            <Link to="/contact" className="hover:text-white">
-              Contact
+            <Link to="/doctors" className="hover:text-white">
+              Doctors
+            </Link>
+            <Link to="/faq" className="hover:text-white">
+              FAQ
+            </Link>
+            <Link to="/appointment" className="hover:text-white">
+              Book visit
             </Link>
           </nav>
         </div>
@@ -67,8 +112,23 @@ function Footer() {
         </div>
       </div>
 
-      <div className="border-t border-white/10 py-5 text-center text-xs text-white/45">
-        © {new Date().getFullYear()} {brand} Clinic. All rights reserved.
+      <div className="border-t border-white/10 px-5 py-5">
+        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 text-center text-xs text-white/45 sm:flex-row sm:text-left">
+          <p>
+            © {new Date().getFullYear()} {brand} Clinic. All rights reserved.
+          </p>
+          <div className="flex gap-4">
+            <Link to="/privacy" className="hover:text-white/70">
+              Privacy
+            </Link>
+            <Link to="/terms" className="hover:text-white/70">
+              Terms
+            </Link>
+            <Link to="/contact" className="hover:text-white/70">
+              Contact
+            </Link>
+          </div>
+        </div>
       </div>
     </footer>
   );

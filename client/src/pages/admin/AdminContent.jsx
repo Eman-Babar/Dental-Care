@@ -14,8 +14,11 @@ function AdminContent() {
     try {
       const { data } = await api.get("/content/admin");
       setItems(data.items || []);
-    } catch {
-      toast.error("Could not load site content");
+    } catch (err) {
+      toast.error(
+        err.response?.data?.message ||
+          "Could not load site content. Check that the API is running."
+      );
     } finally {
       setLoading(false);
     }
@@ -76,7 +79,10 @@ function AdminContent() {
                   <label className="label" htmlFor={item.key}>
                     {item.label}
                   </label>
-                  {item.value?.length > 120 || item.key.includes("body") ? (
+                  {item.value?.length > 120 ||
+                  item.key.includes("body") ||
+                  item.key.includes("faq.items") ||
+                  item.key.includes("map_embed") ? (
                     <textarea
                       id={item.key}
                       className="field min-h-[100px]"

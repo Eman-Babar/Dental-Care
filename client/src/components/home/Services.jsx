@@ -72,6 +72,14 @@ function ServicesSection() {
                   <p className="mt-2 text-sm leading-relaxed text-[var(--muted)]">
                     {service.description || ""}
                   </p>
+                  {service.id && (
+                    <Link
+                      to={`/services/${service.id}`}
+                      className="mt-3 inline-block text-sm font-semibold text-[var(--brand)] hover:underline"
+                    >
+                      Learn more →
+                    </Link>
+                  )}
                 </motion.div>
               );
             })

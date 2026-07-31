@@ -10,7 +10,7 @@ function About() {
   const heading = get("about.heading", "About DentalCare");
   const body = get(
     "about.body",
-    "DentalCare is a neighbourhood clinic focused on gentle, honest dentistry."
+    "DentalCare is a neighbourhood clinic focused on gentle, honest dentistry. Our team combines modern diagnostics with a calm chairside manner so every visit feels clear and reassuring — whether you need a checkup, whitening, or restorative care."
   );
   const image = get(
     "about.image",
@@ -31,18 +31,36 @@ function About() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <h1 className="font-display text-3xl font-semibold text-[var(--ink)] sm:text-4xl md:text-5xl">
+            <p className="text-sm font-semibold uppercase tracking-wider text-[var(--brand)]">
+              Est. neighbourhood clinic
+            </p>
+            <h1 className="mt-3 font-display text-3xl font-semibold text-[var(--ink)] sm:text-4xl md:text-5xl">
               {heading}
             </h1>
             <p className="mt-5 max-w-xl whitespace-pre-line text-sm leading-relaxed text-[var(--muted)] sm:text-base">
               {body}
             </p>
+            <div className="mt-8 grid gap-4 sm:grid-cols-3">
+              {[
+                ["Hygiene", "Sterile protocols every visit"],
+                ["Clarity", "Transparent treatment plans"],
+                ["Comfort", "Calm care for all ages"],
+              ].map(([title, text]) => (
+                <div
+                  key={title}
+                  className="border-l-2 border-[var(--brand)] pl-3"
+                >
+                  <p className="font-semibold text-[var(--ink)]">{title}</p>
+                  <p className="mt-1 text-xs text-[var(--muted)]">{text}</p>
+                </div>
+              ))}
+            </div>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link to="/appointment" className="btn-primary">
                 Book appointment
               </Link>
-              <Link to="/contact" className="btn-secondary">
-                Contact us
+              <Link to="/doctors" className="btn-secondary">
+                Meet the team
               </Link>
             </div>
           </motion.div>
@@ -51,7 +69,7 @@ function About() {
             initial={{ opacity: 0, scale: 1.03 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.7 }}
-            className="relative min-h-[280px] overflow-hidden sm:min-h-[360px]"
+            className="relative min-h-[280px] overflow-hidden sm:min-h-[420px]"
           >
             <img
               src={image}
@@ -59,6 +77,32 @@ function About() {
               className="absolute inset-0 h-full w-full object-cover"
             />
           </motion.div>
+        </div>
+      </section>
+
+      <section className="border-t border-[var(--line)] bg-[var(--mist)]">
+        <div className="mx-auto grid max-w-6xl gap-8 px-4 py-14 sm:px-5 md:grid-cols-3">
+          {[
+            {
+              title: "Patient-first visits",
+              text: "We listen first, then recommend only what your oral health needs.",
+            },
+            {
+              title: "Modern diagnostics",
+              text: "Digital tools help us plan accurately and keep appointments efficient.",
+            },
+            {
+              title: "Follow-through care",
+              text: "Email confirmations, clear aftercare, and easy rebooking when you need us.",
+            },
+          ].map((item) => (
+            <div key={item.title}>
+              <h2 className="font-display text-xl font-semibold text-[var(--ink)]">
+                {item.title}
+              </h2>
+              <p className="mt-2 text-sm text-[var(--muted)]">{item.text}</p>
+            </div>
+          ))}
         </div>
       </section>
 

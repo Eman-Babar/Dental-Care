@@ -1,5 +1,36 @@
 import prisma from "../config/prisma.js";
 
+// @desc    Public clinic reviews for marketing pages
+// @route   GET /api/reviews
+// @access  Public
+export const getPublicReviews = async (req, res) => {
+  try {
+    const limit = Math.min(Number(req.query.limit) || 12, 30);
+    const reviews = await prisma.review.findMany({
+      where: { isPublished: true },
+      take: limit,
+      include: {
+        patient: { select: { name: true } },
+        doctor: {
+          select: {
+            name: true,
+            doctorProfile: { select: { specialization: true } },
+          },
+        },
+        appointment: {
+          include: { service: { select: { title: true } } },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return res.json({ success: true, count: reviews.length, reviews });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 export const getMyReviews = async (req, res) => {
   try {
     const reviews = await prisma.review.findMany({
@@ -99,6 +130,7 @@ export const createReview = async (req, res) => {
         appointmentId: appointment.id,
         rating: stars,
         comment: comment.trim(),
+        isPublished: false,
       },
       include: {
         doctor: { select: { id: true, name: true } },
@@ -108,7 +140,7 @@ export const createReview = async (req, res) => {
 
     return res.status(201).json({
       success: true,
-      message: "Review submitted",
+      message: "Review submitted — it will appear after clinic approval",
       review,
     });
   } catch (error) {

@@ -127,7 +127,7 @@ async function main() {
     },
   });
 
-  await prisma.appointment.create({
+  const completedAppt = await prisma.appointment.create({
     data: {
       patientId: patient.id,
       doctorId: doctor2.id,
@@ -136,6 +136,17 @@ async function main() {
       appointmentTime: "14:30",
       currentProblem: "Toothache in upper left molar.",
       status: "COMPLETED",
+    },
+  });
+
+  await prisma.review.create({
+    data: {
+      patientId: patient.id,
+      doctorId: doctor2.id,
+      appointmentId: completedAppt.id,
+      rating: 5,
+      comment:
+        "Root canal without the dread — careful work, modern tools, and follow-up that actually checked on me.",
     },
   });
 

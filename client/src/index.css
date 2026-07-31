@@ -92,9 +92,11 @@ img {
   transition: background 0.25s ease, transform 0.25s ease;
 }
 
-.btn-primary:hover {
-  background: var(--brand-deep);
-  transform: translateY(-1px);
+.btn-primary:disabled,
+.btn-secondary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .btn-secondary {

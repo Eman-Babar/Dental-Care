@@ -1,42 +1,62 @@
 import { useEffect } from "react";
+import { useSiteContent } from "../../hooks/useSiteContent";
 
 /**
- * Sets document title + meta description for basic on-page SEO.
+ * Sets document title + meta description + Open Graph for basic on-page SEO.
+ * Brand name comes from CMS (home.brand).
  */
-function Seo({
-  title,
-  description = "DentalCare — modern family dentistry. Book appointments online.",
-}) {
+function Seo({ title, description, image, path = "" }) {
+  const { get } = useSiteContent();
+  const brand = get("home.brand", "DentalCare");
+  const defaultDesc = get(
+    "brand.seo_description",
+    "Modern family dentistry. Book appointments online."
+  );
+  const desc = description || defaultDesc;
+  const ogImage =
+    image ||
+    get("brand.og_image", "") ||
+    get("home.hero_image", "");
+
   useEffect(() => {
-    const fullTitle = title.includes("DentalCare")
-      ? title
-      : `${title} | DentalCare`;
+    const fullTitle = title.includes(brand) ? title : `${title} | ${brand}`;
     document.title = fullTitle;
 
-    let meta = document.querySelector('meta[name="description"]');
-    if (!meta) {
-      meta = document.createElement("meta");
-      meta.setAttribute("name", "description");
-      document.head.appendChild(meta);
-    }
-    meta.setAttribute("content", description);
+    const setMeta = (attr, key, content) => {
+      if (!content) return;
+      let el = document.querySelector(`meta[${attr}="${key}"]`);
+      if (!el) {
+        el = document.createElement("meta");
+        el.setAttribute(attr, key);
+        document.head.appendChild(el);
+      }
+      el.setAttribute("content", content);
+    };
 
-    let ogTitle = document.querySelector('meta[property="og:title"]');
-    if (!ogTitle) {
-      ogTitle = document.createElement("meta");
-      ogTitle.setAttribute("property", "og:title");
-      document.head.appendChild(ogTitle);
-    }
-    ogTitle.setAttribute("content", fullTitle);
+    setMeta("name", "description", desc);
+    setMeta("property", "og:title", fullTitle);
+    setMeta("property", "og:description", desc);
+    setMeta("property", "og:type", "website");
+    setMeta("name", "twitter:card", "summary_large_image");
+    setMeta("name", "twitter:title", fullTitle);
+    setMeta("name", "twitter:description", desc);
 
-    let ogDesc = document.querySelector('meta[property="og:description"]');
-    if (!ogDesc) {
-      ogDesc = document.createElement("meta");
-      ogDesc.setAttribute("property", "og:description");
-      document.head.appendChild(ogDesc);
+    if (ogImage) {
+      setMeta("property", "og:image", ogImage);
+      setMeta("name", "twitter:image", ogImage);
     }
-    ogDesc.setAttribute("content", description);
-  }, [title, description]);
+
+    const origin = window.location.origin;
+    const canonicalHref = `${origin}${path || window.location.pathname}`;
+    let canonical = document.querySelector('link[rel="canonical"]');
+    if (!canonical) {
+      canonical = document.createElement("link");
+      canonical.setAttribute("rel", "canonical");
+      document.head.appendChild(canonical);
+    }
+    canonical.setAttribute("href", canonicalHref);
+    setMeta("property", "og:url", canonicalHref);
+  }, [title, desc, brand, ogImage, path]);
 
   return null;
 }

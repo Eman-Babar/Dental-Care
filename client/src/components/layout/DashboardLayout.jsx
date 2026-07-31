@@ -3,6 +3,19 @@ import { LogOut, Menu, X } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 
+function LinkLabel({ label, badge }) {
+  return (
+    <span className="flex w-full items-center justify-between gap-2">
+      <span>{label}</span>
+      {badge > 0 ? (
+        <span className="inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-[var(--brand-deep)] px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white">
+          {badge > 99 ? "99+" : badge}
+        </span>
+      ) : null}
+    </span>
+  );
+}
+
 function DashboardLayout({ title, subtitle, links, children }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -36,7 +49,7 @@ function DashboardLayout({ title, subtitle, links, children }) {
                 }`
               }
             >
-              {link.label}
+              <LinkLabel label={link.label} badge={link.badge} />
             </NavLink>
           ))}
         </nav>
@@ -105,7 +118,7 @@ function DashboardLayout({ title, subtitle, links, children }) {
                   }`
                 }
               >
-                {link.label}
+                <LinkLabel label={link.label} badge={link.badge} />
               </NavLink>
             ))}
           </div>

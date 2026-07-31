@@ -75,6 +75,29 @@ export async function validateAppointmentSlot({
     };
   }
 
+  try {
+    const closedRow = await prisma.siteContent.findUnique({
+      where: { key: "clinic.closedDates" },
+    });
+    if (closedRow?.value) {
+      const closed = JSON.parse(closedRow.value);
+      if (Array.isArray(closed) && closed.length) {
+        const y = appointmentDateTime.getFullYear();
+        const m = String(appointmentDateTime.getMonth() + 1).padStart(2, "0");
+        const d = String(appointmentDateTime.getDate()).padStart(2, "0");
+        const iso = `${y}-${m}-${d}`;
+        if (closed.includes(iso)) {
+          return {
+            ok: false,
+            message: "The clinic is closed on this date. Please choose another day.",
+          };
+        }
+      }
+    }
+  } catch {
+    // ignore invalid CMS JSON
+  }
+
   const existingSlot = await prisma.appointment.findFirst({
     where: {
       doctorId: Number(doctorId),

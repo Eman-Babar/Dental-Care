@@ -1,0 +1,22 @@
+# DentalCare API — pair with Vercel (or any static host) for the React client.
+# Requires an external Postgres (Neon recommended). Copy server/.env into place first.
+
+services:
+  api:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    ports:
+      - "${PORT:-5000}:5000"
+    env_file:
+      - ./server/.env
+    environment:
+      PORT: "5000"
+      # Use Pakistan mornings for digest/reminders if host TZ is UTC
+      TZ: ${TZ:-Asia/Karachi}
+    volumes:
+      - clinic_uploads:/app/uploads
+    restart: unless-stopped
+
+volumes:
+  clinic_uploads:

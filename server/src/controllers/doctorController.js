@@ -296,6 +296,9 @@ export const rejectAppointment = async (req, res) => {
 export const completeAppointment = async (req, res) => {
   try {
     const id = Number(req.params.id);
+    const notes =
+      typeof req.body?.notes === "string" ? req.body.notes.trim() : undefined;
+
     const appointment = await prisma.appointment.findFirst({
       where: { id, doctorId: req.user.id, status: "APPROVED" },
     });
@@ -308,12 +311,20 @@ export const completeAppointment = async (req, res) => {
 
     const updated = await prisma.appointment.update({
       where: { id },
-      data: { status: "COMPLETED" },
+      data: {
+        status: "COMPLETED",
+        ...(notes !== undefined ? { notes: notes || null } : {}),
+      },
       include: {
         patient: { select: { id: true, name: true, email: true, phone: true } },
+        doctor: { select: { id: true, name: true, email: true } },
         service: true,
       },
     });
+
+    notifyPatientStatusChange(updated, "COMPLETED").catch((err) =>
+      console.error("Complete email failed:", err.message || err)
+    );
 
     return res.json({
       success: true,

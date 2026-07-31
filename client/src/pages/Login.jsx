@@ -2,15 +2,22 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
-import { Stethoscope, UserRound } from "lucide-react";
+import { UserRound } from "lucide-react";
 import api from "../api/axios";
 import { useAuth } from "../context/AuthContext";
 import { dashboardPathForRole } from "../utils/storage";
 import PasswordInput from "../components/common/PasswordInput";
+import { useSiteContent } from "../hooks/useSiteContent";
 
 function Login() {
   const navigate = useNavigate();
   const { login } = useAuth();
+  const { get } = useSiteContent();
+  const brand = get("home.brand", "DentalCare");
+  const tagline = get(
+    "brand.tagline",
+    "Gentle dentistry for the whole family — clean smiles, calm visits, trusted care."
+  );
   const [form, setForm] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
 
@@ -44,12 +51,9 @@ function Login() {
         <div className="absolute inset-0 bg-gradient-to-t from-[var(--brand-deep)]/85 via-[var(--brand)]/45 to-transparent" />
         <div className="absolute bottom-0 left-0 right-0 p-12 text-white">
           <p className="font-display text-4xl font-semibold leading-tight">
-            DentalCare
+            {brand}
           </p>
-          <p className="mt-3 max-w-sm text-base text-white/85">
-            Gentle dentistry for the whole family — clean smiles, calm visits,
-            trusted care.
-          </p>
+          <p className="mt-3 max-w-sm text-base text-white/85">{tagline}</p>
         </div>
       </div>
 
@@ -61,7 +65,7 @@ function Login() {
           className="w-full max-w-md"
         >
           <p className="font-display text-3xl font-semibold text-[var(--brand-deep)] lg:hidden">
-            DentalCare
+            {brand}
           </p>
           <h1 className="mt-4 font-display text-3xl font-semibold text-[var(--ink)] md:text-4xl">
             Welcome back
@@ -87,9 +91,17 @@ function Login() {
               />
             </div>
             <div>
-              <label className="label" htmlFor="password">
-                Password
-              </label>
+              <div className="mb-1.5 flex items-center justify-between">
+                <label className="label !mb-0" htmlFor="password">
+                  Password
+                </label>
+                <Link
+                  to="/forgot-password"
+                  className="text-xs font-medium text-[var(--brand)] hover:underline"
+                >
+                  Forgot password?
+                </Link>
+              </div>
               <PasswordInput
                 id="password"
                 name="password"
@@ -106,28 +118,21 @@ function Login() {
 
           <div className="mt-8 border-t border-[var(--line)] pt-6">
             <p className="text-center text-sm font-medium text-[var(--ink)]">
-              New here? Choose your role
+              New patient?
             </p>
-            <div className="mt-4 grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => navigate("/register")}
-                className="flex flex-col items-center gap-2 rounded-xl border border-[var(--line)] bg-[var(--surface)] px-3 py-4 text-center transition hover:border-[var(--brand)] hover:bg-[var(--mist)]"
-              >
-                <UserRound className="text-[var(--brand)]" size={22} />
-                <span className="text-sm font-semibold text-[var(--ink)]">Patient</span>
-                <span className="text-xs text-[var(--muted)]">Register as patient</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => navigate("/register-doctor")}
-                className="flex flex-col items-center gap-2 rounded-xl border border-[var(--line)] bg-[var(--surface)] px-3 py-4 text-center transition hover:border-[var(--brand)] hover:bg-[var(--mist)]"
-              >
-                <Stethoscope className="text-[var(--brand)]" size={22} />
-                <span className="text-sm font-semibold text-[var(--ink)]">Doctor</span>
-                <span className="text-xs text-[var(--muted)]">Register as doctor</span>
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => navigate("/register")}
+              className="mt-4 flex w-full flex-col items-center gap-2 rounded-xl border border-[var(--line)] bg-[var(--surface)] px-3 py-4 text-center transition hover:border-[var(--brand)] hover:bg-[var(--mist)]"
+            >
+              <UserRound className="text-[var(--brand)]" size={22} />
+              <span className="text-sm font-semibold text-[var(--ink)]">
+                Create patient account
+              </span>
+              <span className="text-xs text-[var(--muted)]">
+                Doctors are added by the clinic admin
+              </span>
+            </button>
           </div>
 
           <p className="mt-5 text-center text-sm">

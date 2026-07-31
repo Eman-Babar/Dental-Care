@@ -16,6 +16,7 @@ function Hero() {
     "home.hero_image",
     "https://images.unsplash.com/photo-1629909613654-28e377c37b09?auto=format&fit=crop&w=2000&q=80"
   );
+  const whatsapp = get("contact.whatsapp", "923001234567");
 
   return (
     <section className="relative min-h-[100svh] overflow-hidden">
@@ -40,7 +41,10 @@ function Hero() {
           transition={{ duration: 0.6, delay: 0.15 }}
           className="max-w-xl text-white"
         >
-          <p className="font-display text-4xl font-semibold tracking-tight sm:text-5xl md:text-7xl">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/70 sm:text-sm">
+            Gulberg · Lahore · Family dentistry
+          </p>
+          <p className="mt-3 font-display text-4xl font-semibold tracking-tight sm:text-5xl md:text-7xl">
             {brand}
           </p>
           <h1 className="mt-4 font-display text-2xl font-medium leading-snug text-white/95 sm:mt-5 sm:text-3xl md:text-4xl">
@@ -56,9 +60,17 @@ function Hero() {
             >
               Book appointment
             </Link>
+            <a
+              href={`https://wa.me/${whatsapp}?text=${encodeURIComponent("Hi DentalCare, I would like to book an appointment.")}`}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex w-full items-center justify-center rounded-xl border border-white/50 px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-white/10 sm:w-auto"
+            >
+              WhatsApp
+            </a>
             <Link
               to="/services"
-              className="inline-flex w-full items-center justify-center rounded-xl border border-white/50 px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-white/10 sm:w-auto"
+              className="inline-flex w-full items-center justify-center rounded-xl px-2 py-3.5 text-sm font-medium text-white/85 underline-offset-4 hover:underline sm:w-auto sm:px-4"
             >
               View services
             </Link>
