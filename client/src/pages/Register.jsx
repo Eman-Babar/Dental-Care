@@ -143,8 +143,14 @@ function Register() {
               Sign in
             </Link>
           </p>
-          <p className="mt-2 text-center text-xs text-[var(--muted)]">
-            Clinic staff accounts are created by the admin only.
+          <p className="mt-2 text-center text-sm text-[var(--muted)]">
+            Registering as a doctor?{" "}
+            <Link
+              to="/register-doctor"
+              className="font-semibold text-[var(--brand)]"
+            >
+              Doctor signup
+            </Link>
           </p>
         </motion.div>
       </div>

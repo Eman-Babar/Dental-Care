@@ -118,21 +118,36 @@ function Login() {
 
           <div className="mt-8 border-t border-[var(--line)] pt-6">
             <p className="text-center text-sm font-medium text-[var(--ink)]">
-              New patient?
+              New here?
             </p>
-            <button
-              type="button"
-              onClick={() => navigate("/register")}
-              className="mt-4 flex w-full flex-col items-center gap-2 rounded-xl border border-[var(--line)] bg-[var(--surface)] px-3 py-4 text-center transition hover:border-[var(--brand)] hover:bg-[var(--mist)]"
-            >
-              <UserRound className="text-[var(--brand)]" size={22} />
-              <span className="text-sm font-semibold text-[var(--ink)]">
-                Create patient account
-              </span>
-              <span className="text-xs text-[var(--muted)]">
-                Doctors are added by the clinic admin
-              </span>
-            </button>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={() => navigate("/register")}
+                className="flex flex-col items-center gap-2 rounded-xl border border-[var(--line)] bg-[var(--surface)] px-3 py-4 text-center transition hover:border-[var(--brand)] hover:bg-[var(--mist)]"
+              >
+                <UserRound className="text-[var(--brand)]" size={22} />
+                <span className="text-sm font-semibold text-[var(--ink)]">
+                  Patient signup
+                </span>
+                <span className="text-xs text-[var(--muted)]">
+                  Book and manage visits
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate("/register-doctor")}
+                className="flex flex-col items-center gap-2 rounded-xl border border-[var(--line)] bg-[var(--surface)] px-3 py-4 text-center transition hover:border-[var(--brand)] hover:bg-[var(--mist)]"
+              >
+                <UserRound className="text-[var(--brand-deep)]" size={22} />
+                <span className="text-sm font-semibold text-[var(--ink)]">
+                  Doctor signup
+                </span>
+                <span className="text-xs text-[var(--muted)]">
+                  Manage clinic appointments
+                </span>
+              </button>
+            </div>
           </div>
 
           <p className="mt-5 text-center text-sm">

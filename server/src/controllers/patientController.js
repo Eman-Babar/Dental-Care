@@ -293,6 +293,7 @@ export const rescheduleMyAppointment = async (req, res) => {
       appointmentDate,
       appointmentTime,
       excludeAppointmentId: appointment.id,
+      serviceId: appointment.serviceId,
     });
 
     if (!slotCheck.ok) {

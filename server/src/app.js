@@ -18,6 +18,7 @@ import reviewRoutes from "./routes/reviewRoutes.js";
 import publicChatRoutes from "./routes/publicChatRoutes.js";
 import contactRoutes from "./routes/contactRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
+import queueRoutes from "./routes/queueRoutes.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -108,6 +109,7 @@ app.use("/api/reviews", reviewRoutes);
 app.use("/api/chat", publicFormLimiter, publicChatRoutes);
 app.use("/api/contact", publicFormLimiter, contactRoutes);
 app.use("/api/payments", paymentRoutes);
+app.use("/api/queue", queueRoutes);
 
 app.get("/health", async (req, res) => {
   let database = "ok";

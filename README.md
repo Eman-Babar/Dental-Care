@@ -23,9 +23,9 @@ Modern dental clinic web presence with public appointment requests, role-based d
 | Admin CSV export + payment overview stats | Done |
 | CMS-driven FAQ (`faq.items` JSON) | Done |
 | LICENSE (MIT + commercial note) | Done |
-| Deposit instructions (JazzCash/bank CMS) | Done |
-| Optional Stripe Checkout for deposits | Done |
-| Printable receipt + patient “I’ve paid” claim | Done |
+| Clinic-only payments (CMS instructions; no online pay) | Done |
+| Admin marks payment status at reception | Done |
+| Printable receipt | Done |
 | Daily clinic digest email | Done |
 | Admin clinic backup JSON + image upload | Done |
 | PWA manifest (Add to Home Screen) | Done |
@@ -38,6 +38,8 @@ Modern dental clinic web presence with public appointment requests, role-based d
 | Admin 14-day trend analytics | Done |
 | Maintenance mode (CMS) pauses booking | Done |
 | GitHub Actions CI (client build + Prisma) | Done |
+| Doctor leave days + lunch breaks in schedule | Done |
+| Walk-in patient ticketing + queue display | Done |
 
 ## Selling / deploy checklist
 

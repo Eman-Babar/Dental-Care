@@ -22,6 +22,33 @@ export async function ensureDefaultContent() {
           skipDuplicates: true,
         });
       }
+
+      // One-time: switch CMS payment copy to clinic-pay-only (does not re-run).
+      const mode = await prisma.siteContent.findUnique({
+        where: { key: "payment.mode" },
+      });
+      if (mode?.value !== "clinic_only") {
+        const clinicPayKeys = ["payment.heading", "payment.instructions"];
+        for (const key of clinicPayKeys) {
+          const def = DEFAULT_SITE_CONTENT.find((item) => item.key === key);
+          if (!def) continue;
+          await prisma.siteContent.upsert({
+            where: { key },
+            create: def,
+            update: { value: def.value, label: def.label },
+          });
+        }
+        await prisma.siteContent.upsert({
+          where: { key: "payment.mode" },
+          create: {
+            key: "payment.mode",
+            label: "Payment mode (clinic_only)",
+            group: "payment",
+            value: "clinic_only",
+          },
+          update: { value: "clinic_only" },
+        });
+      }
     })().catch((err) => {
       // Allow retry on next request if this run failed
       ensurePromise = null;

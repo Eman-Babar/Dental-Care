@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import api from "../../api/axios";
 
 /**
- * Shows CMS bank/JazzCash instructions + whether Stripe is available.
+ * Shows clinic-only payment instructions (no online card pay).
  */
 function PaymentInstructions({ className = "" }) {
   const [config, setConfig] = useState(null);
@@ -14,9 +14,9 @@ function PaymentInstructions({ className = "" }) {
       .catch(() =>
         setConfig({
           paymentEnabled: true,
-          heading: "How to pay your deposit",
-          instructions: "",
-          stripeEnabled: false,
+          heading: "Pay at the clinic",
+          instructions:
+            "Please pay your visit / deposit at the clinic reception. Online payments are not available.",
         })
       );
   }, []);
@@ -36,14 +36,12 @@ function PaymentInstructions({ className = "" }) {
         </p>
       ) : (
         <p className="mt-2 text-sm text-[var(--muted)]">
-          Ask the clinic for deposit payment details after booking.
+          Please pay at the clinic reception on the day of your visit.
         </p>
       )}
-      {config.stripeEnabled && (
-        <p className="mt-3 text-xs font-medium text-[var(--ok)]">
-          Online card deposit is available from your patient portal.
-        </p>
-      )}
+      <p className="mt-3 text-xs font-medium text-[var(--brand-deep)]">
+        Online payments are disabled — clinic pay only.
+      </p>
     </aside>
   );
 }

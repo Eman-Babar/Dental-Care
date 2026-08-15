@@ -92,6 +92,34 @@ function DoctorProfile() {
     }));
   };
 
+  const handleBreakChange = (dayKey, field, value) => {
+    setAvailability((prev) => {
+      const day = prev[dayKey];
+      const break0 = day.breaks?.[0] || { start: "13:00", end: "14:00" };
+      return {
+        ...prev,
+        [dayKey]: {
+          ...day,
+          breaks: [{ ...break0, [field]: value }],
+        },
+      };
+    });
+  };
+
+  const toggleBreak = (dayKey) => {
+    setAvailability((prev) => {
+      const day = prev[dayKey];
+      const hasBreak = (day.breaks || []).length > 0;
+      return {
+        ...prev,
+        [dayKey]: {
+          ...day,
+          breaks: hasBreak ? [] : [{ start: "13:00", end: "14:00" }],
+        },
+      };
+    });
+  };
+
   const handleServiceToggle = (serviceId) => {
     setSelectedServiceIds((prev) =>
       prev.includes(serviceId)
@@ -441,47 +469,81 @@ function DoctorProfile() {
         <div>
           <label className="label">Weekly availability</label>
           <p className="mb-3 text-xs text-[var(--muted)]">
-            Check the days you are available and set start/end time for each
-            day. Patients will only see slots within these hours.
+            Set working hours and optional lunch break. Leave days are managed
+            under Schedule in the sidebar.
           </p>
-          <div className="space-y-2">
+          <div className="space-y-3">
             {DAY_KEYS.map((dayKey) => {
               const day = availability[dayKey];
+              const br = day.breaks?.[0];
               return (
                 <div
                   key={dayKey}
-                  className="grid grid-cols-[auto_1fr_1fr] items-center gap-3 rounded-xl border border-[var(--line)] bg-white px-3 py-2 sm:grid-cols-[auto_120px_1fr_1fr]"
+                  className="rounded-xl border border-[var(--line)] bg-white px-3 py-3"
                 >
-                  <label className="flex items-center gap-2 text-sm font-medium">
+                  <div className="grid grid-cols-1 items-center gap-3 sm:grid-cols-[auto_1fr_1fr]">
+                    <label className="flex items-center gap-2 text-sm font-medium">
+                      <input
+                        type="checkbox"
+                        checked={day.enabled}
+                        onChange={() => handleDayToggle(dayKey)}
+                        className="h-4 w-4 accent-[var(--brand)]"
+                      />
+                      <span className="min-w-[72px]">{DAY_LABELS[dayKey]}</span>
+                    </label>
                     <input
-                      type="checkbox"
-                      checked={day.enabled}
-                      onChange={() => handleDayToggle(dayKey)}
-                      className="h-4 w-4 accent-[var(--brand)]"
+                      type="time"
+                      value={day.start}
+                      disabled={!day.enabled}
+                      onChange={(e) =>
+                        handleDayTimeChange(dayKey, "start", e.target.value)
+                      }
+                      className="field !py-2 disabled:opacity-50"
                     />
-                    <span className="min-w-[72px]">{DAY_LABELS[dayKey]}</span>
-                  </label>
-                  <span className="hidden text-xs text-[var(--muted)] sm:block">
-                    {day.enabled ? "Available" : "Off"}
-                  </span>
-                  <input
-                    type="time"
-                    value={day.start}
-                    disabled={!day.enabled}
-                    onChange={(e) =>
-                      handleDayTimeChange(dayKey, "start", e.target.value)
-                    }
-                    className="field !py-2 disabled:opacity-50"
-                  />
-                  <input
-                    type="time"
-                    value={day.end}
-                    disabled={!day.enabled}
-                    onChange={(e) =>
-                      handleDayTimeChange(dayKey, "end", e.target.value)
-                    }
-                    className="field !py-2 disabled:opacity-50"
-                  />
+                    <input
+                      type="time"
+                      value={day.end}
+                      disabled={!day.enabled}
+                      onChange={(e) =>
+                        handleDayTimeChange(dayKey, "end", e.target.value)
+                      }
+                      className="field !py-2 disabled:opacity-50"
+                    />
+                  </div>
+                  {day.enabled && (
+                    <div className="mt-2 flex flex-wrap items-center gap-2 border-t border-[var(--line)] pt-2">
+                      <label className="flex items-center gap-2 text-xs text-[var(--muted)]">
+                        <input
+                          type="checkbox"
+                          checked={Boolean(br)}
+                          onChange={() => toggleBreak(dayKey)}
+                          className="h-3.5 w-3.5 accent-[var(--brand)]"
+                        />
+                        Lunch / break
+                      </label>
+                      {br ? (
+                        <>
+                          <input
+                            type="time"
+                            value={br.start}
+                            onChange={(e) =>
+                              handleBreakChange(dayKey, "start", e.target.value)
+                            }
+                            className="field !w-auto !py-1.5 text-sm"
+                          />
+                          <span className="text-xs text-[var(--muted)]">to</span>
+                          <input
+                            type="time"
+                            value={br.end}
+                            onChange={(e) =>
+                              handleBreakChange(dayKey, "end", e.target.value)
+                            }
+                            className="field !w-auto !py-1.5 text-sm"
+                          />
+                        </>
+                      ) : null}
+                    </div>
+                  )}
                 </div>
               );
             })}

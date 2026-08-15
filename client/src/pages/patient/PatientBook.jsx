@@ -85,7 +85,10 @@ function PatientBook() {
 
     api
       .get(`/doctors/${form.doctorId}/slots`, {
-        params: { date: form.appointmentDate },
+        params: {
+          date: form.appointmentDate,
+          ...(form.serviceId ? { serviceId: form.serviceId } : {}),
+        },
       })
       .then(({ data }) => {
         if (cancelled) return;
@@ -104,7 +107,7 @@ function PatientBook() {
     return () => {
       cancelled = true;
     };
-  }, [form.doctorId, form.appointmentDate]);
+  }, [form.doctorId, form.appointmentDate, form.serviceId]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;

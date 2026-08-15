@@ -3,10 +3,6 @@ import bcrypt from "bcryptjs";
 import prisma from '../config/prisma.js';
 import { validateDentalProblem } from '../utils/dentalProblem.js';
 import { writeAuditLog } from '../utils/auditLog.js';
-import {
-  isSlotInDoctorSchedule,
-  SLOT_MINUTES,
-} from '../utils/doctorAvailability.js';
 import { doctorOffersService } from '../utils/doctorServices.js';
 import {
   notifyClinicNewRequest,
@@ -19,9 +15,7 @@ import {
   buildWhatsAppReminderUrl,
 } from '../utils/appointmentReminders.js';
 import { getMaintenanceState } from '../utils/maintenance.js';
-
-const CLINIC_OPEN_HOUR = 9; // 9:00 AM
-const CLINIC_CLOSE_HOUR = 17; // 5:00 PM
+import { validateAppointmentSlot } from '../utils/appointmentValidation.js';
 
 async function rejectIfMaintenance(res) {
   const maintenance = await getMaintenanceState();
@@ -165,33 +159,15 @@ export const createPublicAppointment = async (req, res) => {
           message: "This doctor does not offer the selected service.",
         });
       }
-      if (
-        doctor.doctorProfile?.availability &&
-        !isSlotInDoctorSchedule(
-          doctor.doctorProfile.availability,
-          appointmentDate,
-          appointmentTime
-        )
-      ) {
-        return res.status(400).json({
-          message:
-            "This time is outside the doctor's available schedule for that day.",
-        });
-      }
 
-      const existingSlot = await prisma.appointment.findFirst({
-        where: {
-          doctorId: Number(doctorId),
-          appointmentDate: new Date(appointmentDate),
-          appointmentTime,
-          status: { in: ["PENDING", "APPROVED"] },
-        },
+      const slotCheck = await validateAppointmentSlot({
+        doctorId: Number(doctorId),
+        appointmentDate,
+        appointmentTime,
+        serviceId: Number(serviceId),
       });
-      if (existingSlot) {
-        return res.status(409).json({
-          message:
-            "This doctor already has an appointment at this time. Please choose another slot.",
-        });
+      if (!slotCheck.ok) {
+        return res.status(400).json({ message: slotCheck.message });
       }
       resolvedDoctorId = Number(doctorId);
     }
@@ -314,72 +290,19 @@ export const createAppointment = async (req, res) => {
       });
     }
 
-    // Block past date / time bookings
-    const timeParts = String(appointmentTime).split(":");
-    const hours = Number(timeParts[0]);
-    const minutes = Number(timeParts[1] || 0);
-
-    if (Number.isNaN(hours) || Number.isNaN(minutes)) {
-      return res.status(400).json({ message: "Invalid appointment time." });
-    }
-    if (hours < CLINIC_OPEN_HOUR) {
-      return res.status(400).json({
-        message: "Clinic booking starts from 9:00 AM.",
-      });
-    }
-    if (hours > CLINIC_CLOSE_HOUR || (hours === CLINIC_CLOSE_HOUR && minutes > 0)) {
-      return res.status(400).json({
-        message: "Clinic booking time is only allowed until 5:00 PM.",
-      });
-    }
-    if (minutes % SLOT_MINUTES !== 0) {
-      return res.status(400).json({
-        message: "Appointments are available in fixed 30-minute slots only.",
-      });
-    }
-
-    if (
-      !isSlotInDoctorSchedule(
-        doctor.doctorProfile?.availability,
-        appointmentDate,
-        appointmentTime
-      )
-    ) {
-      return res.status(400).json({
-        message: "This time is outside the doctor's available schedule for that day.",
-      });
-    }
-
-    const appointmentDateTime = new Date(appointmentDate);
-    appointmentDateTime.setHours(hours, minutes, 0, 0);
-
-    if (Number.isNaN(appointmentDateTime.getTime())) {
-      return res.status(400).json({ message: "Invalid appointment date." });
-    }
-
-    if (appointmentDateTime.getTime() <= Date.now()) {
-      return res.status(400).json({
-        message: "You cannot book an appointment for a past date or time.",
-      });
+    const slotCheck = await validateAppointmentSlot({
+      doctorId: Number(doctorId),
+      appointmentDate,
+      appointmentTime,
+      serviceId: Number(serviceId),
+    });
+    if (!slotCheck.ok) {
+      return res.status(400).json({ message: slotCheck.message });
     }
 
     const dentalCheck = validateDentalProblem(currentProblem);
     if (!dentalCheck.ok) {
       return res.status(400).json({ message: dentalCheck.message });
-    }
-
-    const existingSlot = await prisma.appointment.findFirst({
-      where: {
-        doctorId: Number(doctorId),
-        appointmentDate: new Date(appointmentDate),
-        appointmentTime,
-        status: { in: ["PENDING", "APPROVED"] },
-      },
-    });
-    if (existingSlot) {
-      return res.status(409).json({
-        message: "This doctor already has an appointment at this time. Please choose another slot.",
-      });
     }
 
     const appointment = await prisma.appointment.create({

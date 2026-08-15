@@ -30,6 +30,15 @@ enum PaymentStatus {
   WAIVED
 }
 
+enum TicketStatus {
+  WAITING
+  CALLED
+  IN_PROGRESS
+  DONE
+  SKIPPED
+  CANCELLED
+}
+
 model User {
   id          Int      @id @default(autoincrement())
   name        String
@@ -58,6 +67,9 @@ model User {
 
   reviewsWritten   Review[] @relation("PatientReviews")
   reviewsReceived  Review[] @relation("DoctorReviews")
+
+  doctorLeaves     DoctorLeave[] @relation("DoctorLeaves")
+  doctorTickets    Ticket[]      @relation("DoctorTickets")
 
   @@map("users")
 }
@@ -108,6 +120,7 @@ model Service {
 
   appointments    Appointment[]
   doctorProfiles  DoctorProfile[] @relation("DoctorServices")
+  tickets         Ticket[]
 
   @@map("services")
 }
@@ -209,4 +222,45 @@ model SiteContent {
   updatedAt DateTime @updatedAt
 
   @@map("site_content")
+}
+
+/// Doctor day off / leave (blocks booking slots)
+model DoctorLeave {
+  id        Int      @id @default(autoincrement())
+  doctorId  Int
+  doctor    User     @relation("DoctorLeaves", fields: [doctorId], references: [id], onDelete: Cascade)
+  date      DateTime
+  reason    String?
+  createdAt DateTime @default(now())
+
+  @@unique([doctorId, date])
+  @@map("doctor_leaves")
+}
+
+/// Walk-in / same-day patient queue tickets
+model Ticket {
+  id           Int          @id @default(autoincrement())
+  tokenNo      Int
+  date         DateTime
+  patientName  String
+  phone        String?
+  notes        String?
+  status       TicketStatus @default(WAITING)
+
+  serviceId    Int?
+  service      Service?     @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+
+  doctorId     Int?
+  doctor       User?        @relation("DoctorTickets", fields: [doctorId], references: [id], onDelete: SetNull)
+
+  calledAt     DateTime?
+  startedAt    DateTime?
+  completedAt  DateTime?
+
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@unique([date, tokenNo])
+  @@index([date, doctorId, status])
+  @@map("tickets")
 }

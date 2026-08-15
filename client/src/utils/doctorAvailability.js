@@ -11,35 +11,51 @@ export const DAY_LABELS = {
 };
 
 export const DEFAULT_AVAILABILITY = {
-  mon: { enabled: true, start: "09:00", end: "17:00" },
-  tue: { enabled: true, start: "09:00", end: "17:00" },
-  wed: { enabled: true, start: "09:00", end: "17:00" },
-  thu: { enabled: true, start: "09:00", end: "17:00" },
-  fri: { enabled: true, start: "09:00", end: "17:00" },
-  sat: { enabled: true, start: "09:00", end: "17:00" },
-  sun: { enabled: false, start: "09:00", end: "17:00" },
+  mon: { enabled: true, start: "09:00", end: "17:00", breaks: [{ start: "13:00", end: "14:00" }] },
+  tue: { enabled: true, start: "09:00", end: "17:00", breaks: [{ start: "13:00", end: "14:00" }] },
+  wed: { enabled: true, start: "09:00", end: "17:00", breaks: [{ start: "13:00", end: "14:00" }] },
+  thu: { enabled: true, start: "09:00", end: "17:00", breaks: [{ start: "13:00", end: "14:00" }] },
+  fri: { enabled: true, start: "09:00", end: "17:00", breaks: [{ start: "13:00", end: "14:00" }] },
+  sat: { enabled: true, start: "09:00", end: "17:00", breaks: [] },
+  sun: { enabled: false, start: "09:00", end: "17:00", breaks: [] },
 };
 
 export function normalizeAvailability(raw) {
-  if (!raw) return { ...DEFAULT_AVAILABILITY };
-
+  const result = {};
   let parsed = raw;
   if (typeof raw === "string") {
     try {
       parsed = JSON.parse(raw);
     } catch {
-      return { ...DEFAULT_AVAILABILITY };
+      parsed = null;
     }
   }
 
-  const result = { ...DEFAULT_AVAILABILITY };
   for (const key of DAY_KEYS) {
+    const fallback = DEFAULT_AVAILABILITY[key];
     const day = parsed?.[key];
-    if (!day || typeof day !== "object") continue;
+    if (!day || typeof day !== "object") {
+      result[key] = {
+        enabled: fallback.enabled,
+        start: fallback.start,
+        end: fallback.end,
+        breaks: [...(fallback.breaks || [])],
+      };
+      continue;
+    }
+    const breaks = Array.isArray(day.breaks)
+      ? day.breaks
+          .map((b) => ({
+            start: b?.start || "13:00",
+            end: b?.end || "14:00",
+          }))
+          .filter((b) => b.start && b.end)
+      : [...(fallback.breaks || [])];
     result[key] = {
       enabled: Boolean(day.enabled),
-      start: day.start || "09:00",
-      end: day.end || "17:00",
+      start: day.start || fallback.start,
+      end: day.end || fallback.end,
+      breaks,
     };
   }
   return result;

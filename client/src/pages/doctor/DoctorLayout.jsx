@@ -6,9 +6,11 @@ const links = [
   { to: "/doctor", label: "Overview", end: true },
   { to: "/doctor/requests", label: "Pending requests" },
   { to: "/doctor/upcoming", label: "Upcoming" },
+  { to: "/doctor/queue", label: "Walk-in queue" },
   { to: "/doctor/completed", label: "Completed" },
   { to: "/doctor/patients", label: "My patients" },
   { to: "/doctor/reviews", label: "Reviews" },
+  { to: "/doctor/schedule", label: "Schedule & leave" },
   { to: "/doctor/profile", label: "My profile" },
 ];
 

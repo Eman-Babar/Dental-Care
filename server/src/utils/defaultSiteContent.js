@@ -233,18 +233,18 @@ export const DEFAULT_SITE_CONTENT = [
     key: "payment.heading",
     label: "Payment section heading",
     group: "payment",
-    value: "How to pay your deposit",
+    value: "Pay at the clinic",
   },
   {
     key: "payment.instructions",
-    label: "Bank / JazzCash / EasyPaisa payment instructions",
+    label: "Clinic payment instructions (shown to patients)",
     group: "payment",
     value:
-      "Transfer the deposit and keep the receipt.\n\nJazzCash / EasyPaisa: 0300-1234567 (DentalCare Clinic)\nBank transfer: Meezan Bank — Acc Title: DentalCare Clinic — Acc No: 0123456789\n\nAfter transfer, open your patient portal and tap “I’ve paid” so we can verify.",
+      "Payments are collected at the clinic reception only.\n\nPlease bring cash or your preferred card on the day of your visit. Online card payments are not available.\n\nIf a deposit is required, the clinic team will confirm the amount when they approve your appointment.",
   },
   {
     key: "payment.currency",
-    label: "Payment currency code (for Stripe)",
+    label: "Payment currency label",
     group: "payment",
     value: "pkr",
   },

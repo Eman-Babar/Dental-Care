@@ -2,6 +2,7 @@ import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import DoctorRegister from "./pages/DoctorRegister";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import Services from "./pages/Services";
@@ -29,6 +30,8 @@ import DoctorCompleted from "./pages/doctor/DoctorCompleted";
 import DoctorPatients from "./pages/doctor/DoctorPatients";
 import DoctorReviews from "./pages/doctor/DoctorReviews";
 import DoctorProfile from "./pages/doctor/DoctorProfile";
+import DoctorSchedule from "./pages/doctor/DoctorSchedule";
+import DoctorQueue from "./pages/doctor/DoctorQueue";
 import AdminLayout from "./pages/admin/AdminLayout";
 import AdminOverview from "./pages/admin/AdminOverview";
 import AdminAppointments from "./pages/admin/AdminAppointments";
@@ -38,8 +41,10 @@ import AdminReviews from "./pages/admin/AdminReviews";
 import AdminServices from "./pages/admin/AdminServices";
 import AdminAuditLogs from "./pages/admin/AdminAuditLogs";
 import AdminContent from "./pages/admin/AdminContent";
+import AdminTickets from "./pages/admin/AdminTickets";
 import Receipt from "./pages/Receipt";
 import PaymentSuccess from "./pages/PaymentSuccess";
+import QueueDisplay from "./pages/QueueDisplay";
 import { useAuth } from "./context/AuthContext";
 import { dashboardPathForRole } from "./utils/storage";
 import Loader from "./components/common/Loader";
@@ -49,6 +54,7 @@ import MaintenanceBanner from "./components/common/MaintenanceBanner";
 const HIDE_NAV = [
   "/login",
   "/register",
+  "/register-doctor",
   "/forgot-password",
   "/reset-password",
   "/patient",
@@ -56,6 +62,7 @@ const HIDE_NAV = [
   "/admin",
   "/receipt",
   "/payment",
+  "/queue",
 ];
 
 function App() {
@@ -70,6 +77,7 @@ function App() {
   if (
     loading &&
     (location.pathname === "/register" ||
+      location.pathname === "/register-doctor" ||
       location.pathname === "/login" ||
       location.pathname === "/forgot-password" ||
       location.pathname === "/reset-password")
@@ -101,7 +109,7 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/register-doctor" element={<Navigate to="/login" replace />} />
+        <Route path="/register-doctor" element={<DoctorRegister />} />
         <Route path="/home" element={<Home />} />
         <Route path="/about" element={<About />} />
         <Route path="/services" element={<Services />} />
@@ -158,6 +166,8 @@ function App() {
           <Route path="completed" element={<DoctorCompleted />} />
           <Route path="patients" element={<DoctorPatients />} />
           <Route path="reviews" element={<DoctorReviews />} />
+          <Route path="schedule" element={<DoctorSchedule />} />
+          <Route path="queue" element={<DoctorQueue />} />
           <Route path="profile" element={<DoctorProfile />} />
         </Route>
 
@@ -171,6 +181,7 @@ function App() {
         >
           <Route index element={<AdminOverview />} />
           <Route path="appointments" element={<AdminAppointments />} />
+          <Route path="tickets" element={<AdminTickets />} />
           <Route path="doctors" element={<AdminDoctors />} />
           <Route path="patients" element={<AdminPatients />} />
           <Route path="services" element={<AdminServices />} />
@@ -178,6 +189,8 @@ function App() {
           <Route path="content" element={<AdminContent />} />
           <Route path="audit-logs" element={<AdminAuditLogs />} />
         </Route>
+
+        <Route path="/queue" element={<QueueDisplay />} />
 
         <Route path="/patient-dashboard" element={<Navigate to="/patient" replace />} />
         <Route path="/doctor-dashboard" element={<Navigate to="/doctor" replace />} />

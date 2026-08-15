@@ -3,6 +3,11 @@ import prisma from '../config/prisma.js';
 import { writeAuditLog } from '../utils/auditLog.js';
 import { signAuthToken } from '../utils/jwt.js';
 import { sendPasswordSetupEmail } from '../utils/passwordReset.js';
+import {
+  DEFAULT_AVAILABILITY,
+  normalizeAvailability,
+  summarizeAvailability,
+} from '../utils/doctorAvailability.js';
 
 // JWT generator utility
 const generateToken = (id, role) => signAuthToken(id, role);
@@ -73,14 +78,100 @@ export const register = async (req, res) => {
   }
 };
 
-// @desc    Public doctor self-registration is disabled (admin creates doctors)
+// @desc    Register a new doctor (public self-signup)
 // @route   POST /api/auth/register-doctor
-// @access  Disabled
-export const registerDoctor = async (_req, res) => {
-  return res.status(403).json({
-    message:
-      "Doctor accounts can only be created by the clinic admin. Please contact the clinic.",
-  });
+// @access  Public
+export const registerDoctor = async (req, res) => {
+  const {
+    name,
+    email,
+    password,
+    phone,
+    specialization,
+    qualification,
+    experience,
+    bio,
+    workingDays,
+    workingHours,
+  } = req.body;
+
+  try {
+    if (!name || !email || !password || !specialization) {
+      return res.status(400).json({
+        message: "Name, email, password, and specialization are required",
+      });
+    }
+
+    const userExists = await prisma.user.findUnique({ where: { email } });
+    if (userExists) {
+      return res.status(400).json({ message: "User with this email already exists" });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+    const availability = normalizeAvailability(DEFAULT_AVAILABILITY);
+    const hoursSummary =
+      workingHours || summarizeAvailability(availability);
+
+    const user = await prisma.user.create({
+      data: {
+        name: String(name).trim(),
+        email: String(email).trim().toLowerCase(),
+        phone: phone ? String(phone).trim() : null,
+        password: hashedPassword,
+        role: "DOCTOR",
+        doctorProfile: {
+          create: {
+            specialization: String(specialization).trim(),
+            qualification: qualification ? String(qualification).trim() : null,
+            experience: experience != null && experience !== ""
+              ? Number(experience)
+              : null,
+            bio: bio ? String(bio).trim() : null,
+            workingDays: workingDays || "Mon-Sat",
+            workingHours: hoursSummary,
+            availability,
+          },
+        },
+      },
+      include: {
+        doctorProfile: true,
+      },
+    });
+
+    const token = generateToken(user.id, user.role);
+
+    await writeAuditLog({
+      actorId: user.id,
+      actorRole: user.role,
+      actorEmail: user.email,
+      action: "DOCTOR_REGISTERED",
+      entity: "User",
+      entityId: user.id,
+      details: `Doctor self-registered: ${user.email}`,
+    });
+
+    return res.status(201).json({
+      message: "Doctor registration successful",
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        doctorProfile: user.doctorProfile,
+      },
+    });
+  } catch (error) {
+    console.error("Doctor registration error:", error);
+    if (error?.name === "PrismaClientInitializationError") {
+      return res.status(503).json({
+        message: "Database is unavailable. Check DATABASE_URL / Neon connection.",
+      });
+    }
+    return res.status(500).json({ message: "Internal server error" });
+  }
 };
 
 // @desc    Authenticate user & get token

@@ -15,7 +15,7 @@ const router = express.Router();
 
 // Public routes
 router.post('/register', register);
-router.post('/register-doctor', registerDoctor); // disabled — returns 403
+router.post('/register-doctor', registerDoctor);
 router.post('/login', login);
 router.post('/logout', logout);
 router.post('/forgot-password', forgotPassword);

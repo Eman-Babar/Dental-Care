@@ -36,6 +36,7 @@ function AdminLayout() {
         label: "Appointments",
         badge: alerts.pending + alerts.paymentClaims,
       },
+      { to: "/admin/tickets", label: "Tickets" },
       { to: "/admin/doctors", label: "Doctors" },
       { to: "/admin/patients", label: "Patients" },
       { to: "/admin/services", label: "Services" },

@@ -121,7 +121,12 @@ function UpcomingAppointmentCard({ appointment, onUpdated }) {
 
     api
       .get(`/doctors/${appointment.doctor.id}/slots`, {
-        params: { date: rescheduleDate },
+        params: {
+          date: rescheduleDate,
+          ...(appointment.service?.id
+            ? { serviceId: appointment.service.id }
+            : {}),
+        },
       })
       .then(({ data }) => {
         if (cancelled) return;
@@ -167,39 +172,6 @@ function UpcomingAppointmentCard({ appointment, onUpdated }) {
   const needsPayment = ["UNPAID", "DEPOSIT_DUE"].includes(
     appointment.paymentStatus || "UNPAID"
   );
-
-  const claimPayment = async () => {
-    setBusy(true);
-    try {
-      const { data } = await api.post(`/payments/${appointment.id}/claim`, {
-        note: "Paid via JazzCash / bank transfer",
-      });
-      toast.success(data.message || "Payment claim submitted");
-      onUpdated();
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Could not submit claim");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const payWithStripe = async () => {
-    setBusy(true);
-    try {
-      const { data } = await api.post("/payments/checkout", {
-        appointmentId: appointment.id,
-      });
-      if (data.url) {
-        window.location.href = data.url;
-        return;
-      }
-      toast.error(data.message || "Checkout unavailable");
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Checkout failed");
-    } finally {
-      setBusy(false);
-    }
-  };
 
   const handleReschedule = async () => {
     if (!rescheduleDate || !rescheduleTime) {
@@ -253,8 +225,12 @@ function UpcomingAppointmentCard({ appointment, onUpdated }) {
         {appointment.depositAmount != null
           ? ` · deposit Rs ${appointment.depositAmount}`
           : ""}
-        {appointment.paymentClaimedAt ? " · claim sent" : ""}
       </p>
+      {needsPayment ? (
+        <p className="mt-1 text-xs text-[var(--muted)]">
+          Please pay at the clinic reception. Online payment is not available.
+        </p>
+      ) : null}
 
       {!mode && (
         <div className="mt-4 flex flex-wrap gap-2">
@@ -275,26 +251,6 @@ function UpcomingAppointmentCard({ appointment, onUpdated }) {
           >
             Receipt
           </Link>
-          {needsPayment && (
-            <>
-              <button
-                type="button"
-                className="btn-primary !px-4 !py-2 text-sm"
-                disabled={busy || Boolean(appointment.paymentClaimedAt)}
-                onClick={claimPayment}
-              >
-                {appointment.paymentClaimedAt ? "Claim sent" : "I've paid"}
-              </button>
-              <button
-                type="button"
-                className="btn-secondary !px-4 !py-2 text-sm"
-                disabled={busy || !appointment.depositAmount}
-                onClick={payWithStripe}
-              >
-                Pay deposit online
-              </button>
-            </>
-          )}
           <button
             type="button"
             className="rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-100"

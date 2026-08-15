@@ -1,6 +1,6 @@
 import { sendEmail } from "../config/nodemailer.js";
 import { buildBrandedEmail } from "./emailTemplates.js";
-import { getClientUrl } from "./brand.js";
+import { getClientUrl, getClinicBrand } from "./brand.js";
 
 function visitSummary(appointment) {
   const when = `${new Date(appointment.appointmentDate).toLocaleDateString("en-GB", {
@@ -76,12 +76,13 @@ export async function notifyPatientStatusChange(appointment, status) {
       return { success: false, error: `No patient email for status: ${status}` };
   }
 
+  const brand = await getClinicBrand();
   const reviewUrl =
     status === "COMPLETED"
       ? `${getClientUrl()}/patient/reviews`
       : `${getClientUrl()}/login`;
 
-  const { brand, html, text } = await buildBrandedEmail({
+  const { html, text } = await buildBrandedEmail({
     title,
     intro,
     rows,

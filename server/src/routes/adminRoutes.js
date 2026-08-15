@@ -23,6 +23,11 @@ import {
     getAdminAlerts,
     getAuditLogs,
 } from "../controllers/adminController.js";
+import {
+  createTicket,
+  listTickets,
+  updateTicketStatus,
+} from "../controllers/ticketController.js";
 const router = express.Router();
 router.put(
     "/appointments/:id/assign",
@@ -145,4 +150,14 @@ router.delete(
     restrictTo("ADMIN"),
     deletePatient
 );
+
+router.get("/tickets", protect, restrictTo("ADMIN"), listTickets);
+router.post("/tickets", protect, restrictTo("ADMIN"), createTicket);
+router.put(
+  "/tickets/:id/status",
+  protect,
+  restrictTo("ADMIN"),
+  updateTicketStatus
+);
+
 export default router;
