@@ -106,7 +106,7 @@ App runs at `http://localhost:5173`.
 |---|---|---|
 | Admin | admingmail | ******* |
 | Doctor | doctorgmail | ******** |
-| Patient | patient@dentalcare.com | patient123 |
+| Patient | patientgmail| ********* |
 
 ## Key URLs
 
