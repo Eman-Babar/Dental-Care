@@ -32,7 +32,7 @@ function parseAllowedOrigins() {
     "http://localhost:5173,http://127.0.0.1:5173";
   return raw
     .split(",")
-    .map((s) => s.trim())
+    .map((s) => s.trim().replace(/\/$/, ""))
     .filter(Boolean);
 }
 
@@ -50,6 +50,28 @@ function isLocalDevOrigin(origin) {
   } catch {
     return false;
   }
+}
+
+/** Vercel preview + production hosts (https only). */
+function isVercelOrigin(origin) {
+  if (!origin) return false;
+  try {
+    const url = new URL(origin);
+    return url.protocol === "https:" && url.hostname.endsWith(".vercel.app");
+  } catch {
+    return false;
+  }
+}
+
+function isAllowedOrigin(origin) {
+  if (!origin) return true;
+  if (allowedOrigins.includes("*")) return true;
+  if (allowedOrigins.includes(origin)) return true;
+  // Local frontend → Render API (common while developing)
+  if (isLocalDevOrigin(origin)) return true;
+  // Deployed frontend on Vercel
+  if (isVercelOrigin(origin)) return true;
+  return false;
 }
 
 app.use(
@@ -78,12 +100,7 @@ const publicFormLimiter = rateLimit({
 app.use(
   cors({
     origin(origin, callback) {
-      if (
-        !origin ||
-        allowedOrigins.includes("*") ||
-        allowedOrigins.includes(origin) ||
-        (isDev && isLocalDevOrigin(origin))
-      ) {
+      if (isAllowedOrigin(origin)) {
         return callback(null, true);
       }
       return callback(new Error(`CORS blocked for origin: ${origin}`));
